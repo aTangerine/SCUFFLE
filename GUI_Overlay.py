@@ -81,7 +81,7 @@ class Overlay:
             self.tranparency_color = self.background_color
         self.toplevel.configure(background=self.tranparency_color)
 
-        #self.toplevel.iconbitmap('TekkenData/tekken_bot_close.ico')
+        self.toplevel.iconbitmap('Data/icon.ico')
         if not self.is_draggable_window:
             self.toplevel.overrideredirect(True)
 

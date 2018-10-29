@@ -20,7 +20,7 @@ class GUI_Main(Tk):
 
         Tk.__init__(self)
         self.wm_title("SCUFFLE")
-        #self.iconbitmap('Data/tekken_bot_close.ico')
+        self.iconbitmap('Data/icon.ico')
 
         self.color_scheme_config = ConfigReader.ConfigReader("color_scheme")
         self.color_scheme_config.add_comment("colors with names -> http://www.science.smith.edu/dftwiki/images/3/3d/TkInterColorCharts.png")
@@ -47,7 +47,7 @@ class GUI_Main(Tk):
             print("Error reading readme file.")
 
         updates = VersionChecker.check_version()
-        if updates or True:
+        if updates:
             self.wm_title("SCUFFLE (Updates Available)")
 
         print("SCUFFLE Starting...")
@@ -82,13 +82,6 @@ class GUI_Main(Tk):
             if section not in ("Comments", "Current"):
                 self.color_scheme_menu.add_radiobutton(label=section, variable=self.scheme_var, value=section, command=lambda : self.changed_color_scheme(self.scheme_var.get()))
         self.menu.add_cascade(label="Color Scheme", menu=self.color_scheme_menu)
-
-        self.overlay_mode_menu = Menu(self.menu)
-        self.overlay_var = StringVar()
-        for mode in OverlayMode:
-            self.overlay_mode_menu.add_radiobutton(label=OverlayModeToDisplayName[mode], variable=self.overlay_var, value=mode.name, command=lambda : self.changed_mode(self.overlay_var.get()))
-        self.menu.add_cascade(label="Mode", menu=self.overlay_mode_menu)
-        self.mode = OverlayMode.FrameData
 
         self.tekken_bot_menu = Menu(self.menu)
         self.tekken_bot_menu.add_command(label=VersionChecker.CURRENT_VERSION)

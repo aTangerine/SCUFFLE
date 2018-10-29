@@ -17,7 +17,11 @@ class DataColumns(Enum):
     BLKX = 2
     HITX = 3
     CNTX = 4
-    NOTE = 5
+    DAMG = 5
+    BSTN = 6
+    HSTN = 7
+    CSTN = 8
+    NOTE = 9
 
     def config_name():
         return "DataColumns"
@@ -28,6 +32,10 @@ DataColumnsToMenuNames = {
     DataColumns.BLKX : 'frame advantage when the move is blocked',
     DataColumns.HITX : 'frame advantage when the move hits',
     DataColumns.CNTX : 'frame advantage when the move counter hits',
+    DataColumns.DAMG : 'the amount of damage listed for the move',
+    DataColumns.BSTN : 'amount of frames before defender recovers from blocking',
+    DataColumns.HSTN : 'amount of frames before defender recovers from being hit',
+    DataColumns.CSTN : 'amount of frames before defender recovers from being counter hit',
     DataColumns.NOTE  : '???'
 }
 

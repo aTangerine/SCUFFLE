@@ -1,0 +1,1 @@
+pyinstaller  --clean --icon=Data/icon.ico --add-data Data;Data --name SCUFFLE GUI_Main.py
