@@ -14,14 +14,15 @@ from GUI_Overlay import CurrentColorScheme, ColorSchemeEnum
 class DataColumns(Enum):
     XidX = 0
     impX = 1
-    BLKX = 2
-    HITX = 3
-    CNTX = 4
-    DAMG = 5
-    BSTN = 6
-    HSTN = 7
-    CSTN = 8
-    NOTE = 9
+    TYPE = 2
+    BLKX = 3
+    HITX = 4
+    CNTX = 5
+    DAMG = 6
+    BSTN = 7
+    HSTN = 8
+    CSTN = 9
+    NOTE = 10
 
     def config_name():
         return "DataColumns"
@@ -29,6 +30,7 @@ class DataColumns(Enum):
 DataColumnsToMenuNames = {
     DataColumns.XidX : 'internal move id number',
     DataColumns.impX : 'the frame the move becomes active on',
+    DataColumns.TYPE : 'the type of attack (low/mid/high/throw/special)',
     DataColumns.BLKX : 'frame advantage when the move is blocked',
     DataColumns.HITX : 'frame advantage when the move hits',
     DataColumns.CNTX : 'frame advantage when the move counter hits',
@@ -50,6 +52,10 @@ class TextRedirector(object):
         self.style = style
         self.widget.tag_config("p1", foreground=CurrentColorScheme.dict[ColorSchemeEnum.p1_text])
         self.widget.tag_config("p2", foreground=CurrentColorScheme.dict[ColorSchemeEnum.p2_text])
+        self.widget.tag_config("MID", foreground=CurrentColorScheme.dict[ColorSchemeEnum.mid])
+        self.widget.tag_config("HIGH", foreground=CurrentColorScheme.dict[ColorSchemeEnum.high])
+        self.widget.tag_config("LOW", foreground=CurrentColorScheme.dict[ColorSchemeEnum.low])
+        self.widget.tag_config("THROW", foreground=CurrentColorScheme.dict[ColorSchemeEnum.throw])
         self.columns_to_print = [True] * len(DataColumns)
 
         self.style.configure('.', background=CurrentColorScheme.dict[ColorSchemeEnum.advantage_slight_minus])
@@ -105,20 +111,45 @@ class TextRedirector(object):
             if "p1:" in output_str:
                 #self.fa_p1_var.set(fa)
                 data = data.replace('p1:', '')
-                text_tag = 'p1'
+                player_text_tag = 'p1'
             else:
                 #self.fa_p2_var.set(fa)
                 data = data.replace('p2:', '')
-                text_tag = 'p2'
+                player_text_tag = 'p2'
 
             if '|' in output_str:
                 out = ""
+
+                self.widget.configure(state="normal")
                 for i, col in enumerate(data.split('|')):
                     if self.columns_to_print[i]:
-                        out += '|' + col
+                        text_tag = player_text_tag
+                        self.widget.insert("end", '|', text_tag)
+                        if 'mid' in col:
+                            text_tag = 'MID'
+                            out = 'M   '
+                        elif 'high' in col:
+                            text_tag = 'HIGH'
+                            out = 'H   '
+                        elif 'low' in col:
+                            text_tag = 'LOW'
+                            out = 'L   '
+                        elif 'throw' in col:
+                            text_tag = 'THROW'
+                            out = 'TH  '
+                        elif 'sl' in col:
+                            text_tag = 'LOW'
+                            out = 'SL  '
+                        elif 'sm' in col:
+                            text_tag = 'MID'
+                            out = 'SM  '
+                        else:
+                            text_tag = player_text_tag
+                            out = col
+                        self.widget.insert("end", out, text_tag)
 
-                out += "\n"
-                self.widget.configure(state="normal")
+                out = "\n"
+
                 self.widget.insert("end", out, text_tag)
                 self.widget.configure(state="disabled")
                 self.widget.see('0.0')

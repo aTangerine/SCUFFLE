@@ -110,6 +110,30 @@ class MoveState(Enum):
 
 
 
+class HitLevel(Enum):
+    high_49 = 0x49
+    high_6d = 0x6D #tira 4K
+
+
+    mid_4b = 0x4b #common
+    mid_24 = 0x24  # rising/launching mid?
+    mid_6f = 0x6f  # crouching mid?
+
+    low_37 = 0x37 #common
+    low_13 = 0x13 #crouching low?
+
+    sm_5b = 0x5b
+    sm_7f = 0x7F  # soul charge activation, also ivy backturned B+K
+
+    sl = 0x1b
+
+    throw = 0x81
+
+    UB_mid_43 = 0x43 #maybe only at end?
+    UB_mid_67 = 0x67  # maybe only at end?
+    UB_mid_47 = 0x47
+
+    UB_high = 0x41
 
 
 

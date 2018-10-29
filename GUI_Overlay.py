@@ -29,13 +29,17 @@ class ColorSchemeEnum(Enum):
     advantage_punishible = 8
     advantage_very_punishible = 9
     advantage_text = 10
+    mid = 11
+    high = 12
+    low = 13
+    throw = 14
 
 class CurrentColorScheme:
     dict = {
         ColorSchemeEnum.background : 'gray10',
         ColorSchemeEnum.transparent: 'white',
         ColorSchemeEnum.p1_text: 'ivory2',
-        ColorSchemeEnum.p2_text: 'DeepSkyBlue2',
+        ColorSchemeEnum.p2_text: 'LightSkyBlue1',
         ColorSchemeEnum.system_text: 'lawn green',
         ColorSchemeEnum.advantage_plus: 'DodgerBlue2',
         ColorSchemeEnum.advantage_slight_minus: 'ivory2',
@@ -43,6 +47,10 @@ class CurrentColorScheme:
         ColorSchemeEnum.advantage_punishible: 'orchid2',
         ColorSchemeEnum.advantage_very_punishible: 'deep pink',
         ColorSchemeEnum.advantage_text: 'black',
+        ColorSchemeEnum.mid: '#FFEB44',
+        ColorSchemeEnum.high: '#FF789A',
+        ColorSchemeEnum.low: '#84C1FF',
+        ColorSchemeEnum.throw: '#F29FFF',
     }
 
 class Overlay:

@@ -1,6 +1,7 @@
 import SoulCaliburGameState
 import time
 
+
 class GameStateManager:
     def __init__(self):
         self.game_reader = SoulCaliburGameState.SC6GameReader()
@@ -21,10 +22,11 @@ class GameStateManager:
 
     def FormatFrameString(p_str, p : SoulCaliburGameState.PlayerSnapshot):
         b_h_c = FrameAnalyzer.CalculateFrameAdvantage(p)
-        return "FDO:{}:{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|".format(
+        return "FDO:{}:{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|".format(
                                                         p_str,
                                                         p.timer_block.move_id,
                                                         p.startup_block.startup_frames + 1,
+                                                        p.startup_block.attack_type,
                                                         b_h_c[0],
                                                         b_h_c[1],
                                                         b_h_c[2],

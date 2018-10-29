@@ -71,22 +71,26 @@ def GetBlockOfData(processHandle, address, size_of_block):
     return data
 
 
-def GetValueFromDataBlock(block, offset, is_float=False, is_short=False, debug_print_raw=False):
+def GetValueFromDataBlock(block, offset, is_float=False, is_short=False, is_byte=False, debug_print_raw=False):
     address = offset
 
     num_of_bytes = 4
     if is_short:
         num_of_bytes = 2
+    if is_byte:
+        num_of_bytes = 1
 
     bytes = block[address: address + num_of_bytes]
     if debug_print_raw:
         print(bytes)
-    if not is_float and not is_short:
+    if not is_float and not is_short and not is_byte:
         return struct.unpack("<I", bytes)[0]
     if is_short:
         return struct.unpack("<H", bytes)[0]
     if is_float:
         return struct.unpack("<f", bytes)[0]
+    if is_byte:
+        return struct.unpack('>H', b'\x00' + bytes)[0]
 
 
 '''def GetValueAtEndOfPointerTrail(self, processHandle, enum: NonPlayerDataAddressesEnum, isString):

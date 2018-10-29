@@ -3,6 +3,7 @@ import AddressMap
 from ByteTools import *
 #import ModuleEnumerator
 import PIDSearcher
+import GameplayEnums
 
 class SC6GameReader:
         def __init__(self):
@@ -127,6 +128,11 @@ class SC6StartupBlock:
 
         self.player_health = GetValueFromDataBlock(data_block, 0x16, is_float=True) #starts at 240.00 and decreases
         #0x38 is some kind move property address, but not an actual address, could also be flags?
+        self.attack_type = GetValueFromDataBlock(data_block, 0x40, is_byte=True)
+        try:
+            self.attack_type = GameplayEnums.HitLevel(self.attack_type).name
+        except:
+            pass
 
         self.startup_frames = GetValueFromDataBlock(data_block, 0x44, is_short=True) #1 less than the common terminology
         self.end_of_active_frames = GetValueFromDataBlock(data_block, 0x46, is_short=True) #usually only 1 or 2 higher than startup frames
@@ -153,7 +159,7 @@ class SC6StartupBlock:
         self.block_stun = GetValueFromDataBlock(data_block, 0x80, is_short=True)
         #0x7E dupe of above?
 
-        self.attack_type = GetValueFromDataBlock(data_block, 0xA8, is_short=True)
+        #self.attack_type = GetValueFromDataBlock(data_block, 0xA8, is_short=True)
 
 class SC6GlobalBlock:
     def __init__(self, last_attack_address, total_animation_frames, end_of_move_cancelable_frames):
@@ -206,7 +212,7 @@ if __name__ == "__main__":
                                                                 old_state.p1.startup_block.damage,
                                                                 old_state.p1.global_block.total_animation_frames,
                                                                 old_state.p1.global_block.end_of_move_cancelable_frames,
-                                                                old_state.p1.timer_block.move_id
+                                                                old_state.p1.startup_block.attack_type
 
                                                            )
 
