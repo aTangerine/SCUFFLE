@@ -177,24 +177,8 @@ class GUI_Main(Tk):
         self.overlay = None
 
     def start_overlay(self):
-        if self.mode == OverlayMode.FrameData:
-            self.overlay = fdo.GUI_FrameDataOverlay(self, self.launcher)
-            self.overlay.hide()
-        #if self.mode == OverlayMode.Timeline:
-        #    self.overlay = tlo.GUI_TimelineOverlay(self, self.launcher)
-        #    self.overlay.hide()
-        if self.mode == OverlayMode.CommandInput:
-            self.overlay = cio.GUI_CommandInputOverlay(self, self.launcher)
-            self.overlay.hide()
-        if self.mode == OverlayMode.PunishCoach:
-            self.overlay = pco.GUI_PunishCoashOverlay(self, self.launcher)
-            self.overlay.hide()
-        if self.mode == OverlayMode.MatchupRecord:
-            self.overlay = mso.GUI_MatchStatOverlay(self, self.launcher)
-            self.overlay.hide()
-        if self.mode == OverlayMode.DebugInfo:
-            self.overlay = dio.GUI_DebugInfoOverlay(self, self.launcher)
-            self.overlay.hide()
+        self.overlay = fdo.GUI_FrameDataOverlay(self, self.launcher)
+        self.overlay.hide()
 
 
 
