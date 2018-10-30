@@ -24,7 +24,7 @@ class GUI_Main(Tk):
 
         self.color_scheme_config = ConfigReader.ConfigReader("color_scheme")
         self.color_scheme_config.add_comment("colors with names -> http://www.science.smith.edu/dftwiki/images/3/3d/TkInterColorCharts.png")
-        #self.changed_color_scheme("Current", False)
+        self.changed_color_scheme("Current", False)
 
         self.menu = Menu(self)
         self.configure(menu=self.menu)
@@ -133,13 +133,13 @@ class GUI_Main(Tk):
         self.checkbox_dict[lookup_key] = var
         menu.add_checkbutton(label=display_string, onvalue=True, offvalue=False, variable=var, command = button_command)
 
-    '''def changed_color_scheme(self, section, do_reboot=True):
+    def changed_color_scheme(self, section, do_reboot=True):
         for enum in fdo.ColorSchemeEnum:
             fdo.CurrentColorScheme.dict[enum] = self.color_scheme_config.get_property(section, enum.name, fdo.CurrentColorScheme.dict[enum])
             self.color_scheme_config.set_property("Current", enum.name, fdo.CurrentColorScheme.dict[enum])
         self.color_scheme_config.write()
         if do_reboot:
-            self.reboot_overlay()'''
+            self.reboot_overlay()
 
     def changed_mode(self, mode):
 
@@ -157,10 +157,7 @@ class GUI_Main(Tk):
         for enum in fdo.DataColumns:
             var = self.checkbox_dict[enum]
             generated_columns.append(var.get())
-            if self.mode == OverlayMode.FrameData:
-                self.overlay.update_column_to_print(enum, var.get())
-        if self.mode == OverlayMode.FrameData:
-            self.overlay.set_columns_to_print(generated_columns)
+        self.overlay.set_columns_to_print(generated_columns)
 
     def changed_display(self):
         for enum in ovr.DisplaySettings:

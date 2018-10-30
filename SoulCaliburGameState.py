@@ -157,6 +157,13 @@ class SC6StartupBlock:
         self.hit_stun = GetValueFromDataBlock(data_block, 0x7C, is_short=True)
         self.counterhit_stun = GetValueFromDataBlock(data_block, 0x7E, is_short=True)
         self.block_stun = GetValueFromDataBlock(data_block, 0x80, is_short=True)
+        self.hit_launch = GetValueFromDataBlock(data_block, 0x83, is_byte=True)
+        self.counter_launch = GetValueFromDataBlock(data_block, 0x85, is_byte=True)
+        try:
+            self.hit_launch = GameplayEnums.LaunchType(self.hit_launch).name
+            self.counter_launch = GameplayEnums.LaunchType(self.counter_launch).name
+        except:
+            pass
         #0x7E dupe of above?
 
         #self.attack_type = GetValueFromDataBlock(data_block, 0xA8, is_short=True)

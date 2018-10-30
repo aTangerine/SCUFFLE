@@ -23,12 +23,6 @@ class ColorSchemeEnum(Enum):
     p1_text = 2
     p2_text = 3
     system_text = 4
-    advantage_plus = 5
-    advantage_slight_minus = 6
-    advantage_safe_minus = 7
-    advantage_punishible = 8
-    advantage_very_punishible = 9
-    advantage_text = 10
     mid = 11
     high = 12
     low = 13
@@ -41,12 +35,6 @@ class CurrentColorScheme:
         ColorSchemeEnum.p1_text: 'ivory2',
         ColorSchemeEnum.p2_text: 'LightSkyBlue1',
         ColorSchemeEnum.system_text: 'lawn green',
-        ColorSchemeEnum.advantage_plus: 'DodgerBlue2',
-        ColorSchemeEnum.advantage_slight_minus: 'ivory2',
-        ColorSchemeEnum.advantage_safe_minus: 'ivory2',
-        ColorSchemeEnum.advantage_punishible: 'orchid2',
-        ColorSchemeEnum.advantage_very_punishible: 'deep pink',
-        ColorSchemeEnum.advantage_text: 'black',
         ColorSchemeEnum.mid: '#FFEB44',
         ColorSchemeEnum.high: '#FF789A',
         ColorSchemeEnum.low: '#84C1FF',

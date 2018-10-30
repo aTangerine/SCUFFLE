@@ -14,10 +14,10 @@ from GUI_Overlay import CurrentColorScheme, ColorSchemeEnum
 class DataColumns(Enum):
     XidX = 0
     impX = 1
-    TYPE = 2
-    BLKX = 3
-    HITX = 4
-    CNTX = 5
+    AT = 2
+    XXBLKXX = 3
+    XXHITXX = 4
+    XXCNTXX = 5
     DAMG = 6
     BSTN = 7
     HSTN = 8
@@ -30,10 +30,10 @@ class DataColumns(Enum):
 DataColumnsToMenuNames = {
     DataColumns.XidX : 'internal move id number',
     DataColumns.impX : 'the frame the move becomes active on',
-    DataColumns.TYPE : 'the type of attack (low/mid/high/throw/special)',
-    DataColumns.BLKX : 'frame advantage when the move is blocked',
-    DataColumns.HITX : 'frame advantage when the move hits',
-    DataColumns.CNTX : 'frame advantage when the move counter hits',
+    DataColumns.AT : 'the type of attack (low/mid/high/throw/special)',
+    DataColumns.XXBLKXX : 'frame advantage when the move is blocked',
+    DataColumns.XXHITXX : 'frame advantage when the move hits',
+    DataColumns.XXCNTXX : 'frame advantage when the move counter hits',
     DataColumns.DAMG : 'the amount of damage listed for the move',
     DataColumns.BSTN : 'amount of frames before defender recovers from blocking',
     DataColumns.HSTN : 'amount of frames before defender recovers from being hit',
@@ -58,7 +58,7 @@ class TextRedirector(object):
         self.widget.tag_config("THROW", foreground=CurrentColorScheme.dict[ColorSchemeEnum.throw])
         self.columns_to_print = [True] * len(DataColumns)
 
-        self.style.configure('.', background=CurrentColorScheme.dict[ColorSchemeEnum.advantage_slight_minus])
+        #self.style.configure('.', background=CurrentColorScheme.dict[ColorSchemeEnum.advantage_slight_minus])
 
     def set_columns_to_print(self, booleans_for_columns):
         self.columns_to_print = booleans_for_columns
@@ -127,22 +127,22 @@ class TextRedirector(object):
                         self.widget.insert("end", '|', text_tag)
                         if 'mid' in col:
                             text_tag = 'MID'
-                            out = 'M   '
+                            out = 'M '
                         elif 'high' in col:
                             text_tag = 'HIGH'
-                            out = 'H   '
+                            out = 'H '
                         elif 'low' in col:
                             text_tag = 'LOW'
-                            out = 'L   '
+                            out = 'L '
                         elif 'throw' in col:
                             text_tag = 'THROW'
-                            out = 'TH  '
+                            out = 'TH'
                         elif 'sl' in col:
                             text_tag = 'LOW'
-                            out = 'SL  '
+                            out = 'SL'
                         elif 'sm' in col:
                             text_tag = 'MID'
-                            out = 'SM  '
+                            out = 'SM'
                         else:
                             text_tag = player_text_tag
                             out = col
@@ -169,7 +169,7 @@ class GUI_FrameDataOverlay(GUI_Overlay.Overlay):
         self.s = Style()
         self.s.theme_use('alt')
         self.s.configure('.', background=self.background_color)
-        self.s.configure('.', foreground=CurrentColorScheme.dict[ColorSchemeEnum.advantage_text])
+        #self.s.configure('.', foreground=CurrentColorScheme.dict[ColorSchemeEnum.advantage_text])
 
         Grid.columnconfigure(self.toplevel, 0, weight=0)
         Grid.columnconfigure(self.toplevel, 1, weight=0)
@@ -196,7 +196,7 @@ class GUI_FrameDataOverlay(GUI_Overlay.Overlay):
         self.redirector = TextRedirector(self.stdout, self.text, self.s, None, None)
         self.text.configure(state="normal")
         self.text.delete("1.0", "end")
-        #self.text.insert("1.0", "{:^5}|{:^8}|{:^9}|{:^7}|{:^5}|{:^5}|{:^8}|{:^5}|{:^5}|{:^7}|{:^5}|{}\n".format(" input ", "type", "startup", "block", "hit", "CH", "active", "track", "tot", "rec", "stun", "notes"))
+
         #self.redirector.populate_column_names(self.get_data_columns())
         self.redirector.set_columns_to_print(self.get_data_columns())
 

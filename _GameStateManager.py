@@ -1,6 +1,6 @@
 import SoulCaliburGameState
 import time
-
+import GameplayEnums
 
 class GameStateManager:
     def __init__(self):
@@ -22,7 +22,7 @@ class GameStateManager:
 
     def FormatFrameString(p_str, p : SoulCaliburGameState.PlayerSnapshot):
         b_h_c = FrameAnalyzer.CalculateFrameAdvantage(p)
-        return "FDO:{}:{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|{:^4}|".format(
+        return "FDO:{}:{:^4}|{:^4}|{:^4}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^4}|{:^4}|".format(
                                                         p_str,
                                                         p.timer_block.move_id,
                                                         p.startup_block.startup_frames + 1,
@@ -51,7 +51,16 @@ class FrameAnalyzer:
         on_hit = recovery - (startup + hit_stun)
         on_counter = recovery - (startup + counter_stun)
 
-        return FrameAnalyzer.StringifyAdvantage(on_block), FrameAnalyzer.StringifyAdvantage(on_hit), FrameAnalyzer.StringifyAdvantage(on_counter)
+        b, h, c = FrameAnalyzer.StringifyAdvantage(on_block), FrameAnalyzer.StringifyAdvantage(on_hit), FrameAnalyzer.StringifyAdvantage(on_counter)
+        if p.startup_block.hit_launch != GameplayEnums.LaunchType.none.name:
+            h = '{} {}'.format(p.startup_block.hit_launch, h)
+        if p.startup_block.counter_launch!= GameplayEnums.LaunchType.none.name:
+            c = '{} {}'.format(p.startup_block.counter_launch, c)
+
+
+
+
+        return b, h, c
 
     def StringifyAdvantage(f : int):
         flipped = f * -1
