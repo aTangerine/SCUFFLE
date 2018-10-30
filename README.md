@@ -1,7 +1,7 @@
 # SCUFFLE
 Soul Calibur 6 Live Frame Data Reader -- based on the useful parts of the popular Tekken Bot Prime, it shows you frame data while you're playing the game so you don't have to alt-tab to a wiki or a google doc or a paste bin or yell at your twitch chat or <character> discord. Some of the frame data is even correct.
 
-![image](https://user-images.githubusercontent.com/44570288/47653195-f42b9480-db55-11e8-9558-cea46a72d8cd.png)
+![image](https://user-images.githubusercontent.com/44570288/47742019-b740ca00-dc49-11e8-8f68-938c418bbaa3.png)
 
 # Usage
 
