@@ -15,13 +15,14 @@ class DataColumns(Enum):
     XidX = 0
     impX = 1
     AT = 2
-    XXBLKXX = 3
+    XBLOCKX = 3
     XXHITXX = 4
-    XXCNTXX = 5
-    DAMG = 6
-    BSTN = 7
-    HSTN = 8
-    CSTN = 9
+    COUNTER = 5
+    DAMX = 6
+    GDAM = 7
+    #BSTN = 7
+    #HSTN = 8
+    #CSTN = 9
     NOTE = 10
 
     def config_name():
@@ -31,13 +32,14 @@ DataColumnsToMenuNames = {
     DataColumns.XidX : 'internal move id number',
     DataColumns.impX : 'the frame the move becomes active on',
     DataColumns.AT : 'the type of attack (low/mid/high/throw/special)',
-    DataColumns.XXBLKXX : 'frame advantage when the move is blocked',
+    DataColumns.XBLOCKX : 'frame advantage when the move is blocked',
     DataColumns.XXHITXX : 'frame advantage when the move hits',
-    DataColumns.XXCNTXX : 'frame advantage when the move counter hits',
-    DataColumns.DAMG : 'the amount of damage listed for the move',
-    DataColumns.BSTN : 'amount of frames before defender recovers from blocking',
-    DataColumns.HSTN : 'amount of frames before defender recovers from being hit',
-    DataColumns.CSTN : 'amount of frames before defender recovers from being counter hit',
+    DataColumns.COUNTER : 'frame advantage when the move counter hits',
+    DataColumns.DAMX : 'the amount of damage listed for the move',
+    DataColumns.GDAM : 'amount of guard damage inflicted on block, all characters have a starting guard health of 240 points',
+    #DataColumns.BSTN : 'amount of frames before defender recovers from blocking',
+    #DataColumns.HSTN : 'amount of frames before defender recovers from being hit',
+    #DataColumns.CSTN : 'amount of frames before defender recovers from being counter hit',
     DataColumns.NOTE  : '???'
 }
 

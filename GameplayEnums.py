@@ -116,7 +116,7 @@ class HitLevel(Enum):
 
 
     mid_4b = 0x4b #common
-    mid_24 = 0x24  # rising/launching mid?
+    mid_24 = 0x24  # rising/launching mid? i think this is a substition value, doesn't give mid property when assigned in the editor to other moves
     mid_6f = 0x6f  # crouching mid?
 
     low_37 = 0x37 #common
@@ -134,7 +134,8 @@ class HitLevel(Enum):
     UB_mid_67 = 0x67  # maybe only at end?
     UB_mid_47 = 0x47
 
-    UB_high = 0x41
+    UB_high_41 = 0x41
+    UB_high_63 = 0x63 #from editing move list
 
 class LaunchType(Enum):
     none = 0x0

@@ -166,7 +166,8 @@ class SC6StartupBlock:
             pass
         #0x7E dupe of above?
 
-        #self.attack_type = GetValueFromDataBlock(data_block, 0xA8, is_short=True)
+
+        self.guard_damage = GetValueFromDataBlock(data_block, 0xA8, is_short=True)
 
 class SC6GlobalBlock:
     def __init__(self, last_attack_address, total_animation_frames, end_of_move_cancelable_frames):
