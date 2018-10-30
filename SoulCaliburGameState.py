@@ -168,6 +168,11 @@ class SC6StartupBlock:
 
 
         self.guard_damage = GetValueFromDataBlock(data_block, 0xA8, is_short=True)
+        self.gi_level = 3
+        if self.guard_damage > 7:
+            self.gi_level = 2
+        if self.guard_damage > 22:
+            self.gi_level = 1
 
 class SC6GlobalBlock:
     def __init__(self, last_attack_address, total_animation_frames, end_of_move_cancelable_frames):

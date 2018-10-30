@@ -30,7 +30,7 @@ class DataColumns(Enum):
 
 DataColumnsToMenuNames = {
     DataColumns.XidX : 'internal move id number',
-    DataColumns.impX : 'the frame the move becomes active on',
+    DataColumns.impX : 'the startup frames before the move becomes active',
     DataColumns.AT : 'the type of attack (low/mid/high/throw/special)',
     DataColumns.XBLOCKX : 'frame advantage when the move is blocked',
     DataColumns.XXHITXX : 'frame advantage when the move hits',

@@ -141,7 +141,7 @@ class LaunchType(Enum):
     none = 0x0
     STN = 0x01
     LNC = 0x02
-    CRM = 0x03
+    KND = 0x03
 
 
 

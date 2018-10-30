@@ -31,7 +31,7 @@ class GameStateManager:
                                                         b_h_c[1],
                                                         b_h_c[2],
                                                         p.startup_block.damage,
-                                                        p.startup_block.guard_damage
+                                                        p.startup_block.guard_damage,
                                                       )
 
 
