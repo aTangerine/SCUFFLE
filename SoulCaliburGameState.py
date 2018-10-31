@@ -64,15 +64,17 @@ class SC6GameReader:
                     p1_last_attack_address = GetValueFromAddress(process_handle, AddressMap.p1_last_attack_address)
                     p1_total_animation_frames = GetValueFromAddress(process_handle, AddressMap.p1_total_animation_frames, isFloat=True)
                     p1_end_of_move_cancelable_frames = GetValueFromAddress(process_handle, AddressMap.p1_end_of_move_cancelable_frames, is_short =True)
-                    p1_global = SC6GlobalBlock(p1_last_attack_address, p1_total_animation_frames, p1_end_of_move_cancelable_frames)
+                    p1_is_currently_jumping = GetValueFromAddress(process_handle, AddressMap.p1_is_currently_jumping_address, is_short =True)
+                    p1_is_currently_crouching = GetValueFromAddress(process_handle, AddressMap.p1_is_currently_crouching_address, is_short=True)
+                    p1_global = SC6GlobalBlock(p1_last_attack_address, p1_total_animation_frames, p1_end_of_move_cancelable_frames, p1_is_currently_jumping, p1_is_currently_crouching)
+
 
                     p2_last_attack_address = GetValueFromAddress(process_handle, AddressMap.p2_last_attack_address)
                     p2_total_animation_frames = GetValueFromAddress(process_handle, AddressMap.p2_total_animation_frames, isFloat=True)
                     p2_end_of_move_cancelable_frames = GetValueFromAddress(process_handle, AddressMap.p2_end_of_move_cancelable_frames, is_short=True)
-                    p2_global = SC6GlobalBlock(p2_last_attack_address, p2_total_animation_frames, p2_end_of_move_cancelable_frames)
-
-
-
+                    p2_is_currently_jumping = GetValueFromAddress(process_handle, AddressMap.p2_is_currently_jumping_address, is_short=True)
+                    p2_is_currently_crouching = GetValueFromAddress(process_handle, AddressMap.p2_is_currently_crouching_address, is_short=True)
+                    p2_global = SC6GlobalBlock(p2_last_attack_address, p2_total_animation_frames, p2_end_of_move_cancelable_frames, p2_is_currently_jumping, p2_is_currently_crouching)
 
                     value_p1 = PlayerSnapshot(p1_startup_block, p1_movement_block, p1_timer_block, p1_global)
                     value_p2 = PlayerSnapshot(p2_startup_block, p2_movement_block, p2_timer_block, p2_global)
@@ -112,6 +114,7 @@ class SC6MovementBlock:
         #0x6C timer, int, seems to be a bit less prone to resetting than the others, gets up to bigger values
         #12 bytes of constant?
         self.animation_id = GetValueFromDataBlock(data_block, 0x6C, is_short=True)#0x6C animation id (65535 in nuetral)
+        self.move_counter = GetValueFromDataBlock(data_block, 0x70, is_short=True)  # counts the number of frames in a move
         #0x78 countup move timer, stops and stays at end if you don't do anything else
         #0x7C A float version of the above
         #0x80 the number the move timers are counting up to (number of animation frames?) (float)
@@ -178,10 +181,13 @@ class SC6StartupBlock:
             self.gi_level = 1
 
 class SC6GlobalBlock:
-    def __init__(self, last_attack_address, total_animation_frames, end_of_move_cancelable_frames):
+    def __init__(self, last_attack_address, total_animation_frames, end_of_move_cancelable_frames, is_currently_jumping, is_currently_crouching):
         self.last_attack_address = last_attack_address
         self.total_animation_frames = int(total_animation_frames)
         self.end_of_move_cancelable_frames = end_of_move_cancelable_frames
+        self.is_currently_jumping = is_currently_jumping
+        self.is_currently_crouching = is_currently_crouching
+
 
 
 class SC6TimerBlock:
@@ -222,13 +228,16 @@ if __name__ == "__main__":
             if new_state.p1.movement_block.short_timer != old_state.p1.movement_block.short_timer:
                 old_state = new_state
 
-                str1 ='{} | {} | {} | {} | {} | {} | {}'.format(old_state.p1.movement_block.animation_id,
+                str1 ='{} | {} | {} | {} | {} | {} | {} | {} | {} | {}'.format(old_state.p1.movement_block.animation_id,
                                                                 old_state.p1.startup_block.startup_frames,
                                                                 old_state.p1.startup_block.end_of_active_frames,
                                                                 old_state.p1.startup_block.damage,
                                                                 old_state.p1.global_block.total_animation_frames,
                                                                 old_state.p1.global_block.end_of_move_cancelable_frames,
-                                                                old_state.p1.startup_block.attack_type
+                                                                old_state.p1.global_block.is_currently_jumping,
+                                                                old_state.p1.global_block.is_currently_crouching,
+                                                                old_state.p1.movement_block.short_timer,
+                                                                old_state.p1.movement_block.move_counter,
 
                                                            )
 

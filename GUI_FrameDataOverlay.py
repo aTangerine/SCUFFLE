@@ -20,6 +20,7 @@ class DataColumns(Enum):
     COUNTER = 5
     DAMX = 6
     GDAM = 7
+    WHIFF = 8
     #BSTN = 7
     #HSTN = 8
     #CSTN = 9
@@ -37,6 +38,7 @@ DataColumnsToMenuNames = {
     DataColumns.COUNTER : 'frame advantage when the move counter hits',
     DataColumns.DAMX : 'the amount of damage listed for the move',
     DataColumns.GDAM : 'amount of guard damage inflicted on block, all characters have a starting guard health of 240 points',
+    DataColumns.WHIFF: 'total number of frames in the animation',
     #DataColumns.BSTN : 'amount of frames before defender recovers from blocking',
     #DataColumns.HSTN : 'amount of frames before defender recovers from being hit',
     #DataColumns.CSTN : 'amount of frames before defender recovers from being counter hit',
@@ -46,6 +48,9 @@ DataColumnsToMenuNames = {
 class TextRedirector(object):
     def __init__(self, stdout, widget, style, fa_p1_var, fa_p2_var):
         self.KEY = 'FDO:'
+        self.NOTE = 'NOTE:'
+        self.p1_note = '*'
+        self.p2_note = '^'
 
         self.stdout = stdout
         self.widget = widget
@@ -114,10 +119,12 @@ class TextRedirector(object):
                 #self.fa_p1_var.set(fa)
                 data = data.replace('p1:', '')
                 player_text_tag = 'p1'
+                note_placeholder = self.p1_note
             else:
                 #self.fa_p2_var.set(fa)
                 data = data.replace('p2:', '')
                 player_text_tag = 'p2'
+                note_placeholder = self.p2_note
 
             if '|' in output_str:
                 out = ""
@@ -153,12 +160,32 @@ class TextRedirector(object):
                             out = col
                         self.widget.insert("end", out, text_tag)
 
-                out = "\n"
+                out = note_placeholder + "\n"
 
                 self.widget.insert("end", out, text_tag)
+
                 self.widget.configure(state="disabled")
                 self.widget.see('0.0')
                 self.widget.yview('moveto', '.02')
+
+        if self.NOTE in output_str:
+            out = output_str.replace(self.NOTE, '')
+
+            self.widget.configure(state="normal")
+            if 'p1:' in out:
+                pos = self.widget.search(self.p1_note, END, stopindex=1.0, backwards=True)
+                out = out.replace('p1:', '')
+            elif 'p2:' in out:
+                pos = self.widget.search(self.p2_note, END, stopindex=1.0, backwards=True)
+                out = out.replace('p2:', '')
+            else:
+                pos = None
+            if pos:
+                self.widget.mark_set('note', pos)
+                self.widget.insert('note', out)
+            self.widget.configure(state="disabled")
+
+
 
 
 

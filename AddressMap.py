@@ -27,3 +27,9 @@ p2_total_animation_frames = 0x14463EA90
 
 p1_last_attack_address = 0x1445A7460 #for Tira A is 0x3730, K is 0x5aa0 and A+B is 0x62f0, search for the increase/decrease from one to the next #xianghua's AAB is 0x42b8/0x4408/0x45c8
 p2_last_attack_address = 0x14463E170
+
+p1_is_currently_jumping_address = 0x1445F8B84 # 4 bytes 01 00 00 00 when jumping, 00 when not
+p1_is_currently_crouching_address = 0x1445F8B88 # same as above but for crouching, can probably search for both together with 8 byte array
+
+p2_is_currently_jumping_address = 0x14468F894
+p2_is_currently_crouching_address = 0x14468F898
