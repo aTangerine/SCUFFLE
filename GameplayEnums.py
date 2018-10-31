@@ -128,7 +128,9 @@ class HitLevel(Enum):
     sl_1b = 0x1b
     sl_63 = 0x63
 
-    throw = 0x81
+    throw = 0x81 #most throws
+    throw_ast = 0xC1 #astaroth throws
+    throw_mid = 0x82 #mids
 
     UB_mid_43 = 0x43 #maybe only at end?
     UB_mid_67 = 0x67  # maybe only at end?
@@ -136,6 +138,8 @@ class HitLevel(Enum):
 
     UB_high_41 = 0x41
     UB_high_63 = 0x63 #from editing move list
+
+
 
 class LaunchType(Enum):
     none = 0x0

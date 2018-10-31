@@ -11,8 +11,8 @@ class GameStateManager:
         successful_update = self.game_reader.UpdateCurrentSnapshot()
         if successful_update:
             snapshots = self.game_reader.snapshots
-            if len(snapshots) > 2:
-                did_p1_attack_change = snapshots[-1].p1.global_block.last_attack_address != snapshots[-2].p1.global_block.last_attack_address
+            if len(snapshots) > 4:
+                did_p1_attack_change = snapshots[-3].p1.global_block.last_attack_address != snapshots[-4].p1.global_block.last_attack_address # we build in a slight delay so we don't trample the middile of the update or slower computers
                 if (did_p1_attack_change):
                     print(GameStateManager.FormatFrameString('p1', self.game_reader.snapshots[-1].p1))
 

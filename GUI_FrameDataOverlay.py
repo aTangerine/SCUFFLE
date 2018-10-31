@@ -127,7 +127,10 @@ class TextRedirector(object):
                     if self.columns_to_print[i]:
                         text_tag = player_text_tag
                         self.widget.insert("end", '|', text_tag)
-                        if 'mid' in col:
+                        if 'throw_mid' in col:
+                            text_tag = 'THROW'
+                            out = 'M TH'
+                        elif 'mid' in col:
                             text_tag = 'MID'
                             out = 'M '
                         elif 'high' in col:
