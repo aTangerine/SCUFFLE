@@ -100,12 +100,17 @@ class FrameBackCounter:
             TC = self.backfill_for_func('TC', crouching, snapshots)
             jumping = lambda s: s.global_block.is_currently_jumping
             TJ = self.backfill_for_func('TJ', jumping, snapshots)
+            guard_impacting = lambda s: s.global_block.is_currently_guard_impacting
+            GI = self.backfill_for_func('GI', guard_impacting, snapshots)
+            armoring = lambda s: s.global_block.is_currently_armoring
+            ARM = self.backfill_for_func('REV', armoring, snapshots)
             if self.is_p1:
                 p = 'p1:'
             else:
                 p = 'p2:'
-            note_string = 'NOTE:{} {} {}'.format(p, TC, TJ)
-            if len(note_string) > 10:
+            format_string = 'NOTE:{} {} {} {} {}'
+            note_string = format_string.format(p, ARM, GI, TC, TJ)
+            if len(note_string) > len(format_string.replace('{', '').replace('}', '')):
                 print(note_string)
 
     def backfill_for_func(self, string, func, snapshots):

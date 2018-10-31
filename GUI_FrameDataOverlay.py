@@ -171,6 +171,7 @@ class TextRedirector(object):
         if self.NOTE in output_str:
             out = output_str.replace(self.NOTE, '')
 
+
             self.widget.configure(state="normal")
             if 'p1:' in out:
                 pos = self.widget.search(self.p1_note, END, stopindex=1.0, backwards=True)
@@ -181,6 +182,7 @@ class TextRedirector(object):
             else:
                 pos = None
             if pos:
+                out = out.lstrip()
                 self.widget.mark_set('note', pos)
                 self.widget.insert('note', out)
             self.widget.configure(state="disabled")

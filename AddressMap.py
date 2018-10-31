@@ -33,3 +33,9 @@ p1_is_currently_crouching_address = 0x1445F8B88 # same as above but for crouchin
 
 p2_is_currently_jumping_address = 0x14468F894
 p2_is_currently_crouching_address = 0x14468F898
+
+p1_is_currently_guard_impacting = 0x144563E40 # 8 byte boolean, 1 when guard impacting, 0 the rest of the time; use ivy's super or xianghua's b+k spinny one for enough frames to pause reliably
+p2_is_currently_guard_impacting = 0x1445FAB50
+
+p1_is_currently_armoring = 0x1445652DC #8 byte boole, 1 when armoring, else 0; use nightmare super or 6A or 6K
+p2_is_currently_armoring = 0x1445FBFEC

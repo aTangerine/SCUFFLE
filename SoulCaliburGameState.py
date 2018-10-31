@@ -66,7 +66,9 @@ class SC6GameReader:
                     p1_end_of_move_cancelable_frames = GetValueFromAddress(process_handle, AddressMap.p1_end_of_move_cancelable_frames, is_short =True)
                     p1_is_currently_jumping = GetValueFromAddress(process_handle, AddressMap.p1_is_currently_jumping_address, is_short =True)
                     p1_is_currently_crouching = GetValueFromAddress(process_handle, AddressMap.p1_is_currently_crouching_address, is_short=True)
-                    p1_global = SC6GlobalBlock(p1_last_attack_address, p1_total_animation_frames, p1_end_of_move_cancelable_frames, p1_is_currently_jumping, p1_is_currently_crouching)
+                    p1_is_currently_guard_impacting = GetValueFromAddress(process_handle, AddressMap.p1_is_currently_guard_impacting, is_short=True)
+                    p1_is_currently_armoring = GetValueFromAddress(process_handle, AddressMap.p1_is_currently_armoring, is_short=True)
+                    p1_global = SC6GlobalBlock(p1_last_attack_address, p1_total_animation_frames, p1_end_of_move_cancelable_frames, p1_is_currently_jumping, p1_is_currently_crouching, p1_is_currently_guard_impacting, p1_is_currently_armoring)
 
 
                     p2_last_attack_address = GetValueFromAddress(process_handle, AddressMap.p2_last_attack_address)
@@ -74,7 +76,9 @@ class SC6GameReader:
                     p2_end_of_move_cancelable_frames = GetValueFromAddress(process_handle, AddressMap.p2_end_of_move_cancelable_frames, is_short=True)
                     p2_is_currently_jumping = GetValueFromAddress(process_handle, AddressMap.p2_is_currently_jumping_address, is_short=True)
                     p2_is_currently_crouching = GetValueFromAddress(process_handle, AddressMap.p2_is_currently_crouching_address, is_short=True)
-                    p2_global = SC6GlobalBlock(p2_last_attack_address, p2_total_animation_frames, p2_end_of_move_cancelable_frames, p2_is_currently_jumping, p2_is_currently_crouching)
+                    p2_is_currently_guard_impacting = GetValueFromAddress(process_handle, AddressMap.p2_is_currently_guard_impacting, is_short=True)
+                    p2_is_currently_armoring = GetValueFromAddress(process_handle, AddressMap.p2_is_currently_armoring, is_short=True)
+                    p2_global = SC6GlobalBlock(p2_last_attack_address, p2_total_animation_frames, p2_end_of_move_cancelable_frames, p2_is_currently_jumping, p2_is_currently_crouching, p2_is_currently_guard_impacting, p2_is_currently_armoring)
 
                     value_p1 = PlayerSnapshot(p1_startup_block, p1_movement_block, p1_timer_block, p1_global)
                     value_p2 = PlayerSnapshot(p2_startup_block, p2_movement_block, p2_timer_block, p2_global)
@@ -181,12 +185,14 @@ class SC6StartupBlock:
             self.gi_level = 1
 
 class SC6GlobalBlock:
-    def __init__(self, last_attack_address, total_animation_frames, end_of_move_cancelable_frames, is_currently_jumping, is_currently_crouching):
+    def __init__(self, last_attack_address, total_animation_frames, end_of_move_cancelable_frames, is_currently_jumping, is_currently_crouching, is_currently_guard_impacting, is_currently_armoring):
         self.last_attack_address = last_attack_address
         self.total_animation_frames = int(total_animation_frames)
         self.end_of_move_cancelable_frames = end_of_move_cancelable_frames
         self.is_currently_jumping = is_currently_jumping
         self.is_currently_crouching = is_currently_crouching
+        self.is_currently_guard_impacting = is_currently_guard_impacting
+        self.is_currently_armoring = is_currently_armoring
 
 
 
