@@ -90,7 +90,8 @@ class SC6MovementBlock:
         try:
             self.movement_type = GameplayEnums.MoveState(self.movement_type)
         except Exception as e:
-            print(e)
+            pass
+            # print(e)
         self.short_timer = GetValueFromDataBlock(data_block, 0x08)
         self.float_timer = GetValueFromDataBlock(data_block, 0x0C, is_float=True)
         #0x10 is another timer that only resets on movement/guard?
@@ -132,7 +133,8 @@ class SC6StartupBlock:
         try:
             self.attack_type = GameplayEnums.HitLevel(self.attack_type).name
         except Exception as e:
-            print(e)
+            pass
+            # print(e)
 
         self.startup_frames = GetValueFromDataBlock(data_block, 0x44, is_short=True) #1 less than the common terminology
         self.end_of_active_frames = GetValueFromDataBlock(data_block, 0x46, is_short=True) #usually only 1 or 2 higher than startup frames
@@ -163,7 +165,8 @@ class SC6StartupBlock:
             self.hit_launch = GameplayEnums.LaunchType(self.hit_launch).name
             self.counter_launch = GameplayEnums.LaunchType(self.counter_launch).name
         except Exception as e:
-            print(e)
+            pass
+            #print(e)
         #0x7E dupe of above?
 
 
