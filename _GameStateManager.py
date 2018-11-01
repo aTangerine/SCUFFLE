@@ -10,9 +10,10 @@ class GameStateManager:
         self.p1_backfiller = FrameBackCounter(True)
         self.p2_backfiller = FrameBackCounter(False)
 
-    def Update(self):
+    def Update(self, do_print_debug_vars):
         successful_update = self.game_reader.UpdateCurrentSnapshot()
         if successful_update:
+
             snapshots = self.game_reader.snapshots
             self.p1_backfiller.update(snapshots)
             self.p2_backfiller.update(snapshots)
@@ -28,6 +29,9 @@ class GameStateManager:
                     b, h, c, t, s = GameStateManager.FormatFrameString('p2', self.game_reader.snapshots[-1].p2)
                     self.p2_backfiller.reset(t, 4, snapshots)
                     print(s)
+
+            if do_print_debug_vars:
+                print(self.game_reader.snapshots[-1])
 
     def FormatFrameString(p_str, p : SoulCaliburGameState.PlayerSnapshot):
         b, h, c, t = FrameAnalyzer.CalculateFrameAdvantage(p)

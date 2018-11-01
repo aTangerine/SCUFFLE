@@ -131,10 +131,16 @@ class SC6MovementBlock:
         #0x9C constant?
         #0xA0 mystery
 
+    def __repr__(self):
+        repr = "movement: {} | short_timer: {} | float_timer: {} | animation_id: {} | move_counter: {}".format(
+            self.movement_type, self.short_timer, self.float_timer, self.animation_id, self.move_counter
+        )
+        return repr
+
 class SC6StartupBlock:
     def __init__(self, data_block):
 
-        self.player_health = GetValueFromDataBlock(data_block, 0x16, is_float=True) #starts at 240.00 and decreases
+        #self.player_health = GetValueFromDataBlock(data_block, 0x16, is_float=True) #starts at 240.00 and decreases
         #0x38 is some kind move property address, but not an actual address, could also be flags?
         self.attack_type = GetValueFromDataBlock(data_block, 0x40, is_byte=True)
         try:
@@ -144,7 +150,7 @@ class SC6StartupBlock:
             # print(e)
 
         self.startup_frames = GetValueFromDataBlock(data_block, 0x44, is_short=True) #1 less than the common terminology
-        self.end_of_active_frames = GetValueFromDataBlock(data_block, 0x46, is_short=True) #usually only 1 or 2 higher than startup frames
+        #self.end_of_active_frames = GetValueFromDataBlock(data_block, 0x46, is_short=True) #usually only 1 or 2 higher than startup frames #??? this is, something else
         self.damage = GetValueFromDataBlock(data_block, 0x48, is_short=True)
         #0x4A is a constant, though different for p1 and p2 same character (01 22 vs 01 BB)
         #0x4C 4 byte constant? 01 D1 vs 01 D9
@@ -178,11 +184,14 @@ class SC6StartupBlock:
 
 
         self.guard_damage = GetValueFromDataBlock(data_block, 0xA8, is_short=True)
-        self.gi_level = 3
-        if self.guard_damage > 7:
-            self.gi_level = 2
-        if self.guard_damage > 22:
-            self.gi_level = 1
+
+    def __repr__(self):
+        repr = "attack_type: {} | startup: {} | dam: {} | hit_stun: {} | counter_stun: {} | block_stun: {} | launch_hit: {} | launch_counter: {} | guard_damage: {}".format(
+            self.attack_type, self.startup_frames, self.damage, self.hit_stun, self.counterhit_stun, self.block_stun, self.hit_launch, self.counter_launch, self.guard_damage
+        )
+
+        return repr
+
 
 class SC6GlobalBlock:
     def __init__(self, last_attack_address, total_animation_frames, end_of_move_cancelable_frames, is_currently_jumping, is_currently_crouching, is_currently_guard_impacting, is_currently_armoring):
@@ -194,11 +203,18 @@ class SC6GlobalBlock:
         self.is_currently_guard_impacting = is_currently_guard_impacting
         self.is_currently_armoring = is_currently_armoring
 
+    def __repr__(self):
+        repr = "attack_address: {} | total_uncanceled_frames: {} | frames_move_can_be_canceled_early: {} | TJ: {} | TC: {} | GI: {} | REV: {}".format(
+            hex(self.last_attack_address), self.total_animation_frames, self.end_of_move_cancelable_frames, self.is_currently_jumping, self.is_currently_crouching, self.is_currently_guard_impacting, self.is_currently_armoring)
+        return repr
 
 
 class SC6TimerBlock:
     def __init__(self, data_block):
         self.move_id = GetValueFromDataBlock(data_block, 0x74, is_short=True)
+
+    def __repr__(self):
+        return "move_id: {}".format(self.move_id)
 
 class PlayerSnapshot:
     def __init__(self, startup_data_block, movement_data_block, timer_data_block, global_block : SC6GlobalBlock):
@@ -207,7 +223,8 @@ class PlayerSnapshot:
         self.timer_block = SC6TimerBlock(timer_data_block)
         self.global_block = global_block
 
-
+    def __repr__(self):
+        return "{} | {} | {} | {}".format(self.timer_block, self.startup_block, self.global_block, self.movement_block)
 
 
 class GameSnapshot:
@@ -215,7 +232,8 @@ class GameSnapshot:
         self.p1 = p1_snapshot
         self.p2 = p2_snapshot
 
-
+    def __repr__(self):
+        return "{} ||| {}".format(self.p1, self.p2)
 
 
 if __name__ == "__main__":
@@ -233,33 +251,7 @@ if __name__ == "__main__":
 
             if new_state.p1.movement_block.short_timer != old_state.p1.movement_block.short_timer:
                 old_state = new_state
-
-                str1 ='{} | {} | {} | {} | {} | {} | {} | {} | {} | {}'.format(old_state.p1.movement_block.animation_id,
-                                                                old_state.p1.startup_block.startup_frames,
-                                                                old_state.p1.startup_block.end_of_active_frames,
-                                                                old_state.p1.startup_block.damage,
-                                                                old_state.p1.global_block.total_animation_frames,
-                                                                old_state.p1.global_block.end_of_move_cancelable_frames,
-                                                                old_state.p1.global_block.is_currently_jumping,
-                                                                old_state.p1.global_block.is_currently_crouching,
-                                                                old_state.p1.movement_block.short_timer,
-                                                                old_state.p1.movement_block.move_counter,
-
-                                                           )
-
-
-                str2 = '{} | {} | {} | {} | {} | {} | {}'.format(old_state.p2.movement_block.animation_id,
-                                                                 old_state.p2.startup_block.startup_frames,
-                                                                 old_state.p2.startup_block.end_of_active_frames,
-                                                                 old_state.p2.startup_block.damage,
-                                                                 old_state.p2.movement_block.float_timer,
-                                                                 old_state.p2.movement_block.short_timer,
-                                                                 old_state.p2.timer_block.move_id
-
-
-                                                           )
-
-                print('{}               {}'.format(str1, str2))
+                print(new_state)
 
             #if v1.movement_block.movement_type != ov1.movement_block.movement_type or v2.movement_block.movement_type != ov2.movement_block.movement_type:
                 #ov1, ov2 = v1, v2

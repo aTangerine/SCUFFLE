@@ -59,6 +59,11 @@ class GUI_Main(Tk):
         self.tekken_bot_menu = Menu(self.menu)
         self.tekken_bot_menu.add_command(label="Restart", command=self.restart)
 
+        self.do_print_debug_values = BooleanVar()
+        self.do_print_debug_values.set(False)
+        self.tekken_bot_menu.add_checkbutton(label='DEBUG: Print Every Frame (WARNING: CPU USAGE HIGH)', onvalue=True, offvalue=False, variable=self.do_print_debug_values)
+
+
         #self.tekken_bot_menu.add_checkbutton(label="Print Frame Data To \"TekkenData/frame_data_output.txt\"", onvalue=True, offvalue=False, variable=self.var_print_frame_data_to_file)
         self.menu.add_cascade(label="SCUFFLE", menu=self.tekken_bot_menu)
 
@@ -186,7 +191,7 @@ class GUI_Main(Tk):
 
     def update_launcher(self):
         time1 = time.time()
-        successful_update = self.launcher.Update()
+        successful_update = self.launcher.Update(self.do_print_debug_values.get())
 
         if self.overlay != None:
             self.overlay.update_location()

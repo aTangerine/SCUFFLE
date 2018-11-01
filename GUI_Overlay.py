@@ -11,7 +11,7 @@ from tkinter.ttk import *
 class DisplaySettings(Enum):
     overlay_on_bottom = -1
     overlay_as_draggable_window = 0
-    only_appears_when_Tekken_7_has_focus = 1
+    only_appears_when_SC6_has_focus = 1
     transparent_background = 2
 
     def config_name():
@@ -48,7 +48,7 @@ class Overlay:
         self.tekken_config = ConfigReader(config_filename)
         is_windows_7 = 'Windows-7' in platform.platform()
         self.is_draggable_window = self.tekken_config.get_property(DisplaySettings.config_name(), DisplaySettings.overlay_as_draggable_window.name, False)
-        self.is_minimize_on_lost_focus = self.tekken_config.get_property(DisplaySettings.config_name(), DisplaySettings.only_appears_when_Tekken_7_has_focus.name, True)
+        self.is_minimize_on_lost_focus = self.tekken_config.get_property(DisplaySettings.config_name(), DisplaySettings.only_appears_when_SC6_has_focus.name, True)
         #self.is_transparency = self.tekken_config.get_property(DisplaySettings.config_name(), DisplaySettings.transparent_background.name, not is_windows_7)
         self.is_transparency = self.tekken_config.get_property(DisplaySettings.config_name(), DisplaySettings.transparent_background.name, False)
         self.is_overlay_on_top = not self.tekken_config.get_property(DisplaySettings.config_name(), DisplaySettings.overlay_on_bottom.name, False)
