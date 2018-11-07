@@ -4,12 +4,15 @@ from ByteTools import *
 #import ModuleEnumerator
 import PIDSearcher
 import GameplayEnums
+import MovelistParser
 
 class SC6GameReader:
         def __init__(self):
             self.pid = -1
             self.module_address = 0x140000000 #hard coding this until it breaks, then use ModuleEnumerator again
             self.snapshots = []
+            self.p1_movelist = None
+            self.p2_movelist = None
 
         def IsForegroundPID(self):
             pid = c.wintypes.DWORD()
@@ -32,6 +35,10 @@ class SC6GameReader:
         def VoidPID(self):
             self.pid = -1
 
+        def VoidMovelists(self):
+            self.p1_movelist = None
+            self.p2_movelist = None
+
         def UpdateCurrentSnapshot(self):
             if not self.HasWorkingPID():
                 self.pid = PIDSearcher.GetPIDByName(b'SoulcaliburVI.exe')
@@ -48,18 +55,29 @@ class SC6GameReader:
 
                 if test_value == 0: #not in a fight yet or application closed
                     self.VoidPID()
+                    self.VoidMovelists()
                     return False
                 else:
+                    if self.p1_movelist == None:
+                        #movelist_sample = GetValueFromAddress(process_handle, AddressMap.p1_movelist_address, isString=True)
+                        movelist_sample = GetDataBlockAtEndOfPointerOffsetList(process_handle, 0, [AddressMap.p1_movelist_address], 0x4)
+                        movelist_sample = GetValueFromDataBlock(movelist_sample, 0)
+
+                        if  movelist_sample == MovelistParser.Movelist.STARTER_INT:
+                            p1_movelist_data = GetDataBlockAtEndOfPointerOffsetList(process_handle, 0, [AddressMap.p1_movelist_address], AddressMap.MOVELIST_BYTES)
+                            p2_movelist_data = GetDataBlockAtEndOfPointerOffsetList(process_handle, 0, [AddressMap.p2_movelist_address], AddressMap.MOVELIST_BYTES)
+                            self.p1_movelist = MovelistParser.Movelist(p1_movelist_data)
+                            self.p2_movelist = MovelistParser.Movelist(p2_movelist_data)
+
                     p1_startup_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p1_startup_block_breadcrumb, 0x100)
                     p2_startup_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p2_startup_block_breadcrumb, 0x100)
 
                     p1_movement_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p1_movement_block_breadcrumb, 0x100)
                     p2_movement_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p2_movement_block_breadcrumb, 0x100)
 
-
-
                     p1_timer_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p1_timer_block_breadcrumb, 0x200)
                     p2_timer_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p2_timer_block_breadcrumb, 0x200)
+
 
                     p1_last_attack_address = GetValueFromAddress(process_handle, AddressMap.p1_last_attack_address)
                     p1_total_animation_frames = GetValueFromAddress(process_handle, AddressMap.p1_total_animation_frames, isFloat=True)
@@ -68,6 +86,7 @@ class SC6GameReader:
                     p1_is_currently_crouching = GetValueFromAddress(process_handle, AddressMap.p1_is_currently_crouching_address, is_short=True)
                     p1_is_currently_guard_impacting = GetValueFromAddress(process_handle, AddressMap.p1_is_currently_guard_impacting, is_short=True)
                     p1_is_currently_armoring = GetValueFromAddress(process_handle, AddressMap.p1_is_currently_armoring, is_short=True)
+
                     p1_global = SC6GlobalBlock(p1_last_attack_address, p1_total_animation_frames, p1_end_of_move_cancelable_frames, p1_is_currently_jumping, p1_is_currently_crouching, p1_is_currently_guard_impacting, p1_is_currently_armoring)
 
 
@@ -82,6 +101,8 @@ class SC6GameReader:
 
                     value_p1 = PlayerSnapshot(p1_startup_block, p1_movement_block, p1_timer_block, p1_global)
                     value_p2 = PlayerSnapshot(p2_startup_block, p2_movement_block, p2_timer_block, p2_global)
+
+
 
                     if (len(self.snapshots) == 0) or (value_p1.movement_block.short_timer != self.snapshots[-1].p1.movement_block.short_timer):
                         self.snapshots.append(GameSnapshot(value_p1, value_p2))
@@ -117,7 +138,7 @@ class SC6MovementBlock:
         #0x68 on hit or block seems to be a damage... correlated? number (float)
         #0x6C timer, int, seems to be a bit less prone to resetting than the others, gets up to bigger values
         #12 bytes of constant?
-        self.animation_id = GetValueFromDataBlock(data_block, 0x6C, is_short=True)#0x6C animation id (65535 in nuetral)
+        self.movelist_id = GetValueFromDataBlock(data_block, 0x6C, is_short=True)#0x6C animation id (65535 in nuetral)
         self.move_counter = GetValueFromDataBlock(data_block, 0x70, is_short=True)  # counts the number of frames in a move
         #0x78 countup move timer, stops and stays at end if you don't do anything else
         #0x7C A float version of the above
@@ -133,7 +154,7 @@ class SC6MovementBlock:
 
     def __repr__(self):
         repr = "movement: {} | short_timer: {} | float_timer: {} | animation_id: {} | move_counter: {}".format(
-            self.movement_type, self.short_timer, self.float_timer, self.animation_id, self.move_counter
+            self.movement_type, self.short_timer, self.float_timer, self.movelist_id, self.move_counter
         )
         return repr
 
@@ -252,6 +273,9 @@ if __name__ == "__main__":
             if new_state.p1.movement_block.short_timer != old_state.p1.movement_block.short_timer:
                 old_state = new_state
                 print(new_state)
+                if myReader.p1_movelist != None:
+                    myReader.p1_movelist.print_cancel_bytes_by_move_id(new_state.p1.movement_block.movelist_id)
+
 
             #if v1.movement_block.movement_type != ov1.movement_block.movement_type or v2.movement_block.movement_type != ov2.movement_block.movement_type:
                 #ov1, ov2 = v1, v2

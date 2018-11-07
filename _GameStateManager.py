@@ -37,7 +37,7 @@ class GameStateManager:
         b, h, c, t = FrameAnalyzer.CalculateFrameAdvantage(p)
         str = "FDO:{}:{:^4}|{:^4}|{:^4}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^4}|".format(
                                                         p_str,
-                                                        p.timer_block.move_id,
+                                                        p.movement_block.movelist_id,
                                                         p.startup_block.startup_frames + 1,
                                                         p.startup_block.attack_type,
                                                         b,
