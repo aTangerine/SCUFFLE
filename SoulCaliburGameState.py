@@ -193,15 +193,27 @@ class SC6StartupBlock:
         self.hit_stun = GetValueFromDataBlock(data_block, 0x7C, is_short=True)
         self.counterhit_stun = GetValueFromDataBlock(data_block, 0x7E, is_short=True)
         self.block_stun = GetValueFromDataBlock(data_block, 0x80, is_short=True)
-        self.hit_launch = GetValueFromDataBlock(data_block, 0x83, is_byte=True)
-        self.counter_launch = GetValueFromDataBlock(data_block, 0x85, is_byte=True)
+        self.hit_launch = GetValueFromDataBlock(data_block, 0x82, is_short=True)
+        self.counter_launch = GetValueFromDataBlock(data_block, 0x84, is_short=True)
         try:
-            self.hit_launch = GameplayEnums.LaunchType(self.hit_launch).name
-            self.counter_launch = GameplayEnums.LaunchType(self.counter_launch).name
+            #self.hit_launch = GameplayEnums.HitEffect(self.hit_launch)
+            self.hit_launch = GameplayEnums.HitEffectToLaunchType(self.hit_launch).name
+
         except Exception as e:
-            pass
             #print(e)
-        #0x7E dupe of above?
+            self.hit_launch = hex(self.hit_launch)
+
+        try:
+            #self.counter_launch = GameplayEnums.HitEffect(self.counter_launch)
+            self.counter_launch = GameplayEnums.HitEffectToLaunchType(self.counter_launch).name
+        except Exception as e:
+            self.counter_launch = hex(self.counter_launch)
+
+
+
+
+        self.has_counterhit_properties = (self.hit_launch != self.counter_launch) or (self.hit_stun != self.counterhit_stun)
+
 
 
         self.guard_damage = GetValueFromDataBlock(data_block, 0xA8, is_short=True)

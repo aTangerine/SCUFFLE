@@ -146,13 +146,235 @@ class LaunchType(Enum):
     STN = 0x01
     LNC = 0x02
     KND = 0x03
+    THROW = 0xAA
 
 
 
 
 
+class HitEffect(Enum):
+    #Not launches (frame data displayed correctly)
+    hit_00 = 0x0 #(cinematic incoming??)
+    hit_01 = 0x1 #no sell flinch right
+    hit_05 = 0x5
+    hit_09 = 0x9 #slight bend right
+    hit_0d = 0xd
+    hit_11 = 0x11 #jab right flinch
+    hit_15 = 0x15 #jab left flinch
+    hit_17 = 0x17
+    hit_19 = 0x19 #very slight whiplash
+    hit_1d = 0x1d #whiplash flinch
+    hit_21 = 0x21 #flinch back
+    hit_25 = 0x25 #= flinch back (most standard hit???)
+    hit_2b = 0x2b #slight lift flinch
+    hit_2c = 0x2c #fencing(?)
+    hit_30 = 0x30 #fencing stagger
+    hit_36 = 0x36 #stagger back hands out (c'mon) (other default hit state)
+    hit_3a = 0x3a #similar to 0x36?
+    hit_3e = 0x3e
+    hit_46 = 0x46
+    hit_4a = 0x4a
+    hit_4e = 0x4e
+    hit_52 = 0x52 #flinch left in place
+    hit_56 = 0x56
+    hit_5a = 0x5a
+    hit_5e = 0x5e #very slight flinch right
+    hit_62 = 0x62 #the slightest of up flinches
+    hit_66 = 0x66 #stagger/turn to the right
+    hit_6a = 0x6a #stagger/turn to the left
+    hit_6e = 0x6e
+    hit_6f = 0x6f
+    hit_72 = 0x72 #(throw animation? geralt throat slash?)
+    hit_74 = 0x74
+    hit_7e = 0x7e
+    hit_82 = 0x82
+    hit_86 = 0x86
+    hit_8a = 0x8a #spinning (ends front)
+    hit_8e = 0x8e #= grab left shoulder
+    hit_92 = 0x92
+    hit_96 = 0x96 #look down
+    hit_9a = 0x9a #crouching flinch
+    hit_9e = 0x9e #flinch down
+    hit_a2 = 0xa2 #crouch flinch
+    hit_a6 = 0xa6 #crouch flinch
+    hit_aa = 0xaa  # = reversal edge/flinch forward
+    hit_ae = 0xae
+    hit_b2 = 0xb2 #head nod down flinch
+    hit_b6 = 0xb6
+    hit_be = 0xbe #kneeling flinch
+    hit_ba = 0xbe
+    hit_c2 = 0xc2
+    hit_c6 = 0xc6 #slight stagger back (first hit into 0x36)
+    hit_ca = 0xca #looking up
+    hit_ce = 0xce #looking up flinch
+    hit_d2 = 0xd2
+    hit_d6 = 0xd6
+    hit_d7 = 0xd7
+    hit_da = 0xda #= ??
+    hit_de = 0xde #flinch up
+    hit_e2 = 0xe2 #stomach lift
+    hit_e6 = 0xe6
+    hit_ea = 0xea #slight jerk back
+    hit_ed = 0xed
+    hit_ee = 0xee #jerk back
+    hit_f1 = 0xf1
+    hit_f2 = 0xf2 #rapid flinches???
+    hit_f4 = 0xf4 #flinch foward (hip thrust)
+    hit_f6 = 0xf6 #same as f4??
+    hit_f7 = 0xf7
+    hit_f8 = 0xf8
+    hit_fa = 0xfa
+    hit_fe = 0xfe #double over stomach grab
+    hit_ff = 0xff
 
 
+    #frame data displays correctly for these as well, despite have animations or hex number kinda like launchers
+    hit_102 = 0x102 #4 step stagger back stomach grab
+    hit_103 = 0x103 #stagger left
+    hit_104 = 0x104 #stagger right (no backward movement)
+    hit_106 = 0x106 #knock on butt (stays fairly close)
+    hit_10a = 0x10a #soul charge (long pull)
+    hit_10e = 0x10e #slow pull, roll to feet (WS)
+    hit_11e = 0x11e #flinch left trip
+    hit_126 = 0x126 #(trip flinch as well??)
+    hit_12e = 0x12e #right leg lift flinch
+    hit_132 = 0x132 #leg lift flinch
+    hit_142 = 0x142 #right leg lift flinch (again)
+    hit_14a = 0x14a #grab leg
+    hit_14e = 0x14e #leg lift off balance flinch
+    hit_15e = 0x15e #= trip flinch
+    hit_16e = 0x16e #kneeling/prayer flinch
+    hit_16f = 0x16f #hands on the ground flinch
+    hit_172 = 0x172 #crouch flinch??? used in rapid succession combos
+    hit_177 = 0x177 #legs knocked out to left
+    hit_178 = 0x178 #knock to all fours
+
+    hit_2e1 = 0x2e1 #electric writhe (see 0x2de, but frame data accurate???)
+
+    hit_30a = 0x30a #= spinning electric stun
+    hit_332 = 0x332 #electric kneel
+    hit_362 = 0x362 #knocked on butt stun
+    hit_36e = 0x36e #stomach grab stun (no knockdown)
+
+
+    #Launches, knockdowns, or crumples. Frame data here is often wrong
+
+
+    #hit_16e = 0x16e #(?) facing down simple launch #????
+    hit_116 = 0x116 #1.5 spin pull
+    hit_182 = 0x182 #shorter pull (?)
+    hit_186 = 0x186 #ice skater spin pull
+    hit_18a = 0x18a #ice skater spin to the right + pull
+    hit_18e = 0x18e  # ice skater spin left, pull
+    hit_1ba = 0x1ba #(1 flip long pull, face down)(sometimes not that long?)
+    hit_1bb = 0x1bb #pull left and flip (WS to the side)
+    hit_1bc = 0x1bc #pull right and flip
+    hit_1b6 = 0x1b6 #ground smash, legs forward, head back
+    hit_1c6 = 0x1c6 #smash into ground
+    hit_1d6 = 0x1d6 #ground slam back first
+    hit_1de = 0x1de #rock sliding pull
+    hit_1e6 = 0x1e6 #rocket launch (straight up, straight down)
+
+
+    hit_226 = 0x226 #(ground bounce launch no spin face up)
+    hit_229 = 0x229 #(no spin launch/face down)
+    hit_237 = 0x237 #(simple launch)
+    hit_23b = 0x23b #same as 0x237?? (wall spalts)
+    hit_23c = 0x23c #(2 rotation launch) (does not wall splat for some moves, others ws to left, finicky)
+    hit_23d = 0x23d #1.5 end over end spin, lands on side
+    hit_23e = 0x23e #end over end lands on shoulder
+    hit_240 = 0x240 #(3? rotation launch, seems high)
+    hit_245 = 0x245 #multiple reverse spins
+    hit_246 = 0x246 #1 spin hi pull
+    hit_249 = 0x249 #set up launch
+    hit_252 = 0x252 #ift/medium short pull
+    hit_256 = 0x256 #lifted back, momentum completes roll onto face
+    hit_258 = 0x258  # slung right
+
+    hit_26a = 0x26A #(pulled back launch)
+    hit_26e = 0x26E #(same as 26a?)
+    hit_26f = 0x26F #ice skater spin to left + pull
+    hit_286 = 0x286 #half spin land on head launch
+    hit_28e = 0x28e #similar to 286?
+    hit_296 = 0x296 #similar to 0x286???
+    hit_29a = 0x29a #similar to 0x286???
+    hit_2aa = 0x2aa #side spin land on head launch
+    hit_2a6 = 0x2a6 # same as 2aa????
+    hit_2ae = 0x2ae #face plant feet go back and out
+
+    hit_2ba = 0x2ba #(?) slow fall back to butt (crumple??)
+    hit_2ca = 0x2ca #slow fall forward knees first
+    hit_2da = 0x2da #falling back crumple (c'mon stance)
+    hit_2d2 = 0x2d2 #falling forward crumple
+    hit_2de = 0x2de #electric writhe
+
+    hit_2e2 = 0x2e2 #spin around fall back(forward) crumple
+    hit_31a = 0x31a  # crumple fall right
+    hit_326 = 0x326 #turn around and crumple landing face down
+    hit_336 = 0x336 #falling back crumple (crouching stance)
+    hit_33e = 0x33e #crumple kneel fall forward
+    hit_342 = 0x342 #electric crumple
+    hit_346 = 0x346 #launch crumple
+    hit_34a = 0x34a #knocked up and back crumple forward
+    hit_34e = 0x34e #smash knockdown crumple
+    hit_35e = 0x35e #go limp crumple
+
+
+
+    hit_37a = 0x37a #stomach grab crumple forward
+    hit_38a = 0x38a #concussed crumple fall back
+    hit_392 = 0x392 #twisting side fall right
+    hit_39e = 0x39e #back and forth stun/crumple
+
+    #for throws only
+    hit_3a3 = 0x3a3 #throw(?)
+
+
+
+    #untested
+    hit_100 = 0x100
+    hit_105 = 0x105
+
+    hit_107 = 0x107
+    hit_108 = 0x108
+    hit_109 = 0x109
+    hit_10d = 0x10d
+
+    hit_112 = 0x112
+    hit_11a = 0x11a
+    #...
+
+
+CRUMPLES = [
+            HitEffect.hit_2ba, HitEffect.hit_2da, HitEffect.hit_2d2, HitEffect.hit_2de, HitEffect.hit_2e2, HitEffect.hit_2ca,
+            HitEffect.hit_31a, HitEffect.hit_326, HitEffect.hit_336, HitEffect.hit_33e, HitEffect.hit_342, HitEffect.hit_346, HitEffect.hit_34a, HitEffect.hit_34e,
+            HitEffect.hit_38a, HitEffect.hit_392, HitEffect.hit_39e]
+
+KNOCKDOWNS = [HitEffect.hit_116, HitEffect.hit_182, HitEffect.hit_186, HitEffect.hit_18a, HitEffect.hit_18e,
+              HitEffect.hit_1b6, HitEffect.hit_1ba, HitEffect.hit_1bb, HitEffect.hit_1bc, HitEffect.hit_1c6, HitEffect.hit_1de, HitEffect.hit_1d6, HitEffect.hit_1e6,
+              ]
+
+LAUNCHES = [HitEffect.hit_226, HitEffect.hit_229, HitEffect.hit_237, HitEffect.hit_23b, HitEffect.hit_23c, HitEffect.hit_23d, HitEffect.hit_23e,
+            HitEffect.hit_240, HitEffect.hit_245, HitEffect.hit_246, HitEffect.hit_249, HitEffect.hit_252, HitEffect.hit_256, HitEffect.hit_258, HitEffect.hit_26a, HitEffect.hit_26e, HitEffect.hit_26f,
+            HitEffect.hit_286, HitEffect.hit_28e, HitEffect.hit_296, HitEffect.hit_29a, HitEffect.hit_2a6, HitEffect.hit_2aa, HitEffect.hit_2ae]
+
+
+EXCEPTIONS = [HitEffect.hit_2e1.value, HitEffect.hit_30a.value, HitEffect.hit_332.value, HitEffect.hit_362.value, HitEffect.hit_36e.value]
+
+def HitEffectToLaunchType(he):
+    if he == HitEffect.hit_3a3.value:
+        return LaunchType.THROW
+
+    if he in EXCEPTIONS:
+        return LaunchType.none
+    if he >= 0x2ba:
+        return LaunchType.STN
+    if he >= 0x200:
+        return LaunchType.LNC #todo 0x116 might be a reverse exception here?
+    if he >= 0x180:
+        return LaunchType.KND
+
+    return LaunchType.none
 
 
 

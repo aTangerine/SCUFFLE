@@ -67,9 +67,20 @@ class FrameAnalyzer:
 
         b, h, c = FrameAnalyzer.StringifyAdvantage(on_block), FrameAnalyzer.StringifyAdvantage(on_hit), FrameAnalyzer.StringifyAdvantage(on_counter)
         if p.startup_block.hit_launch != GameplayEnums.LaunchType.none.name:
-            h = '{} {}'.format(p.startup_block.hit_launch, h)
+            if p.startup_block.hit_launch != GameplayEnums.LaunchType.THROW.name:
+                h = '{} {}'.format(p.startup_block.hit_launch, h)
+            else:
+                h = '{}'.format(p.startup_block.hit_launch)
         if p.startup_block.counter_launch!= GameplayEnums.LaunchType.none.name:
-            c = '{} {}'.format(p.startup_block.counter_launch, c)
+            if p.startup_block.counter_launch != GameplayEnums.LaunchType.THROW.name:
+                c = '{} {}'.format(p.startup_block.counter_launch, c)
+            else:
+                c = '{}'.format(p.startup_block.counter_launch)
+
+
+
+        if not p.startup_block.has_counterhit_properties:
+            c = ''
 
         return b, h, c, total_frames
 

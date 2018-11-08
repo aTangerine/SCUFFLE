@@ -199,8 +199,8 @@ class Movelist:
                 for index in range(0, len(bytes), 1):
                     if bytes[index: index + 1] == b'\x25':
                         if bytes[index + 1 : index + 2] in (b'\x03', b'\x07', b'\x14', b'\x0d'):
-                            if bytes[index: index + 2] == b'\x25\x07':
-                                if bytes[index + 2: index + 3] != b'\x01':
+                            if bytes[index: index + 2] == b'\x25\x07' or True:
+                                if bytes[index + 2: index + 3] != b'\x01' or True:
                                     Movelist.print_bytes(bytes[running_index: index + 3])
                             running_index = index + 3
 
@@ -209,37 +209,50 @@ class Movelist:
         string = ' '.join('{:02x}'.format(x) for x in byte_array)
         print(string)
 
-    def print_stuff(self, all_moves, all_cancels):
 
-        print(len(all_cancels))
-        print(len(all_moves))
 
-        potential_bytes = []
-        for attack in self.all_attacks:
-            potential_bytes.append(hex(attack.block_effect))
-        for cancel in all_cancels:
-            pass
 
-            #print(cancel.bytes)
-
-            #potential_bytes.append(hex(b2i(cancel.bytes, 2)))
-            #potential_bytes.append(len(cancel.bytes))
-            #if cancel.bytes[2:4] != b'\x00\x8b':
-            #if (len(cancel.bytes) >= 8):
-                #potential_bytes.append(hex(b2i(cancel.bytes, 6)))
-            #if len(cancel.bytes) < 10:
-                #print ('{} : {} : {}'.format(hex(cancel.address), len(cancel.bytes), cancel.bytes))
-        print(Counter(potential_bytes))
 
 
 
 
 
 if __name__ == "__main__":
+    import os
+    def load_all_movelists():
+
+        directory = 'movelists/'
+
+        movelists = []
+        for filename in os.listdir(directory):
+            if filename.endswith('.m0000'):
+                localpath = '{}/{}'.format(directory, filename)
+                with open(localpath, 'rb') as fr:
+                    raw_bytes = fr.read()
+                    movelist = Movelist(raw_bytes)
+                    movelists.append(movelist)
+        return movelists
+
+
+
+
+
     #input_file = 'tira_movelist.byte.m0000'
-    input_file = 'xianghua_movelist.byte.m0000' #these come from cheat engine, memory viewer -> memory regions -> (movelist address) . should be 0x150000 bytes
+    input_file = 'movelists/xianghua_movelist.byte.m0000' #these come from cheat engine, memory viewer -> memory regions -> (movelist address) . should be 0x150000 bytes
 
     with open(input_file, 'rb') as fr:
         raw_bytes = fr.read()
     movelist = Movelist(raw_bytes)
-    movelist.print_stuff(movelist.all_moves, movelist.all_cancels)
+
+    movelists = load_all_movelists()
+
+    counted_bytes = []
+    for mvlist in movelists:
+        for attack in mvlist.all_attacks:
+            if attack.hit_effect <= 0xff:
+                counted_bytes.append(hex(attack.hit_effect))
+
+    print(sorted(Counter(counted_bytes)))
+
+
+
