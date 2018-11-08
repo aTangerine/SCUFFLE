@@ -106,6 +106,9 @@ class SC6GameReader:
 
                     if (len(self.snapshots) == 0) or (value_p1.movement_block.short_timer != self.snapshots[-1].p1.movement_block.short_timer):
                         self.snapshots.append(GameSnapshot(value_p1, value_p2))
+                        MAX_FRAMES_TO_KEEP = 1000
+                        if len(self.snapshots) > MAX_FRAMES_TO_KEEP:
+                            self.snapshots = self.snapshots[MAX_FRAMES_TO_KEEP // 2: -1]
                         return True
                     else:
                         return False
