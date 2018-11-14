@@ -33,9 +33,11 @@ class GameStateManager:
             if do_print_debug_vars:
                 print(self.game_reader.snapshots[-1])
 
+
+
     def FormatFrameString(p_str, p : SoulCaliburGameState.PlayerSnapshot):
         b, h, c, t = FrameAnalyzer.CalculateFrameAdvantage(p)
-        str = "FDO:{}:{:^4}|{:^4}|{:^4}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^4}|".format(
+        str = "FDO:{}:{:^4}|{:^4}|{:^4}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|".format(
                                                         p_str,
                                                         p.movement_block.movelist_id,
                                                         p.startup_block.startup_frames + 1,
@@ -45,6 +47,7 @@ class GameStateManager:
                                                         c,
                                                         p.startup_block.damage,
                                                         p.startup_block.guard_damage,
+                                                        p.startup_block.end_of_active_frames - p.startup_block.startup_frames,
                                                         t,
                                                       )
 

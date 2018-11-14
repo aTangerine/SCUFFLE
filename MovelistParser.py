@@ -26,12 +26,18 @@ MOVELIST STRUCTURE
 
 import struct
 from collections import Counter
+from MovelistEnums import *
 
 def b4i (bytes, index : int):
     return struct.unpack('I', bytes[index: index + 4])[0]
 
-def b2i (bytes, index : int):
-    return struct.unpack('H', bytes[index: index + 2])[0]
+def b2i (bytes, index : int , big_endian = False):
+    if not big_endian:
+        return struct.unpack('H', bytes[index: index + 2])[0]
+    else:
+        return struct.unpack('>H', bytes[index: index + 2])[0]
+
+
 
 def b1i (bytes, index : int):
     return struct.unpack('B', bytes[index: index + 1])[0]
@@ -130,9 +136,10 @@ class Attack:
 
 
 class Cancel:
-    def __init__(self, bytes, address):
+    def __init__(self, bytes, address, move_id):
         self.address = address
         self.bytes = bytes
+        self.move_id = move_id
         #print(len(self.bytes))
         #print(self.bytes[-4:])
 
@@ -141,7 +148,8 @@ class Movelist:
     HEADER_LENGTH = 0x30
     #STARTER_STRING = 'KH11'
     STARTER_INT = 0x3131484b
-    def __init__(self, raw_bytes):
+    def __init__(self, raw_bytes, name):
+        self.name = name.replace('/', '')
 
         header_index_1 = 0xC
         header_index_2 = 0x10 # to attacks info
@@ -171,11 +179,12 @@ class Movelist:
             self.all_attacks.append(attack)
 
         self.all_cancels = {}
-        for i in range(0, len(self.all_moves) - 2):
+        for i in range(0, len(self.all_moves) - 1):
             ca = self.all_moves[i].cancel_address
-            cancel = Cancel(raw_bytes[ca: self.all_moves[i + 1].cancel_address], ca)
+            cancel = Cancel(raw_bytes[ca: self.all_moves[i + 1].cancel_address], ca, i)
             self.all_cancels[ca] = cancel
-            #TODO: missing the very last cancel
+
+
 
 
 
@@ -197,19 +206,133 @@ class Movelist:
                 cancel_frames = []
                 running_index = 0
                 for index in range(0, len(bytes), 1):
-                    if bytes[index: index + 1] == b'\x25':
-                        if bytes[index + 1 : index + 2] in (b'\x03', b'\x07', b'\x14', b'\x0d'):
-                            if bytes[index: index + 2] == b'\x25\x07' or True:
-                                if bytes[index + 2: index + 3] != b'\x01' or True:
-                                    Movelist.print_bytes(bytes[running_index: index + 3])
-                            running_index = index + 3
+                    if int(bytes[index + 1 : index + 2]) in [CC.EXE_25.value, CC.EXE_19.value]:
+                        footer = bytes[index: index + 3]
+                        if footer[:2] == b'\x25\x07': #or footer == b'\x25\x0d\x06':
+                            if bytes[index + 2: index + 3] != b'\x01' or False:
+                                move_cancel_bytes = bytes[running_index: index + 3]
+                                Movelist.print_bytes(move_cancel_bytes)
+                                self.parse_move_cancel(move_cancel_bytes)
+                        running_index = index + 3
 
+
+    def parse_move_cancel(self, bytes):
+        buffer_89 = bytes.split(b'\x89')
+        #buffer_89 = [x[:2] for x in buffer_89]
+
+        buffer_8B = bytes.split(b'\x8B')
+        #buffer_8B = [x[:2] for x in buffer_8B]
+
+        buffer_89.pop(0) #this is the stuff before 89, which we don't care about and will make our indexes weird
+        buffer_8B.pop(0)
+
+        win_start = self.search_for_cancel_arg(buffer_89, 0, -1)
+        if len(buffer_89[0]) == 2: #if the second 89 is directly after the first, then we have an exit window as well
+            win_end = self.search_for_cancel_arg(buffer_89, 1, -1)
+        else:
+            win_end = -2
+
+        cancel_type = self.search_for_cancel_arg(buffer_8B, 0, -1)
+        cancel_type_arg = self.search_for_cancel_arg(buffer_8B, 1, -1)
+
+        next_move = self.search_for_cancel_arg(buffer_8B, -1, -1)
+
+        print('cancel: {}-{}  x{} input: {} / {}'.format(win_start, win_end, next_move, hex(cancel_type), hex(cancel_type_arg)))
+
+
+    def search_for_cancel_arg(self, array, index, default):
+        if index < len(array) and len(array) >= 2:
+            return b2i(array[index], 0, big_endian=True)
+        else:
+            return default
 
     def print_bytes(byte_array):
-        string = ' '.join('{:02x}'.format(x) for x in byte_array)
+        string = Movelist.bytes_as_string(byte_array)
         print(string)
 
+    def bytes_as_string(byte_array):
+        return ' '.join('{:02x}'.format(x) for x in byte_array)
 
+
+
+    def from_file(filename):
+        with open(filename, 'rb') as fr:
+            raw_bytes = fr.read()
+        return Movelist(raw_bytes, filename)
+
+    def parse_neutral(cancel : Cancel):
+        args_expected = 0
+        unlisted_singles = []
+        buf_89 = [-1, -1, -1, -1, -1]
+        buf_8a = [-1, -1, -1, -1, -1]
+        buf_8b = [-1, -1, -1, -1, -1]
+        button_code = None
+        next_8b_is_input = False
+        next_19_is_normal_move = False
+        next_19_is_8way_move = False
+        while_crouching_flag = False
+        while_standing_signs = [-1]
+        buffers = [buf_89, buf_8a, buf_8b]
+
+        for i in range(len((cancel.bytes))):
+            if args_expected == 0:
+                inst = int(cancel.bytes[i])
+                try:
+                    next_instruction = CC(inst)
+                except Exception as e:
+                    print('ERROR move_id:{} hex:{}'.format(cancel.move_id, hex(inst)))
+                    unlisted_singles.append((inst, i))
+                    next_instruction = inst
+                    #raise e
+
+                ccs_with_args = [CC.START, CC.ARG_8A, CC.ARG_8B, CC.ARG_89, CC.EXE_19, CC.EXE_25, CC.EXE_A5, CC.EXE_13, CC.PEN_2A, CC.PEN_28, CC.PEN_29]
+
+                if next_instruction in ccs_with_args:
+                    args_expected = 2
+                    if next_instruction in [CC.ARG_89, CC.ARG_8A, CC.ARG_8B]:
+                        try:
+                            buffers[abs(0x89 - inst)].append(b2i(cancel.bytes[i+1:], 0, big_endian = True))
+                        except Exception as e:
+                            print('error move_id: {} inst: {} counter: {}'.format(cancel.move_id, hex(inst), i))
+                            raise e
+
+                        if next_instruction == CC.ARG_8A:
+                            if buf_8a[-1] == 0x0102: #input marker
+                                next_8b_is_input = True
+                            if buf_8a[-1] == 0x0103:
+                                next_19_is_8way_move = True
+                            if buf_8a[-1] == 0x003D:
+                                next_19_is_normal_move = True
+                        if next_instruction in [CC.ARG_8B]:
+                            if next_8b_is_input:
+                                button_code = buf_8b[-1]
+                                next_8b_is_input = False
+
+                if next_instruction in [CC.EXE_19]:
+                    if buf_89[-1] == 0xffff: #dunno what these are, but they aren't moves???
+                        next_19_is_8way_move = False
+                        next_19_is_normal_move = False
+                    elif next_19_is_normal_move:
+                        next_19_is_normal_move = False
+
+                        if not while_crouching_flag:
+                            print('(move:{} dir:{} but:{})'.format(buf_8b[-1], buf_89[-1], button_code))
+                        else:
+                            print('(move:{} WC dir:{} but:{})'.format(buf_8b[-1], buf_89[-1], button_code))
+
+                        if not while_crouching_flag:
+                            if button_code in while_standing_signs:
+                                if button_code != while_standing_signs[-1]:
+                                    while_crouching_flag = True
+                            else:
+                                while_standing_signs.append(button_code)
+                    elif next_19_is_8way_move:
+                        print('(move:{} 8waydir:{} but:{})'.format(buf_8b[-1], buf_89[-1], button_code))
+                        next_19_is_8way_move = False
+            else:
+                args_expected -= 1
+
+        return unlisted_singles
 
 
 
@@ -227,32 +350,76 @@ if __name__ == "__main__":
         for filename in os.listdir(directory):
             if filename.endswith('.m0000'):
                 localpath = '{}/{}'.format(directory, filename)
-                with open(localpath, 'rb') as fr:
-                    raw_bytes = fr.read()
-                    movelist = Movelist(raw_bytes)
-                    movelists.append(movelist)
+                movelist = Movelist.from_file(localpath)
+                movelists.append(movelist)
         return movelists
 
-
-
-
-
     #input_file = 'tira_movelist.byte.m0000'
-    input_file = 'movelists/xianghua_movelist.byte.m0000' #these come from cheat engine, memory viewer -> memory regions -> (movelist address) . should be 0x150000 bytes
 
-    with open(input_file, 'rb') as fr:
-        raw_bytes = fr.read()
-    movelist = Movelist(raw_bytes)
+    def print_out_cancel_blocks(movelist, fw):
+        for cancel in sorted(movelist.all_cancels.values(), key=lambda x: len(x.bytes)):
+            running_index = 0
+            check_for_end = False
+            fw.write('#{}\n'.format(cancel.move_id))
+            index = 0
+            while index < len(cancel.bytes):
+                # if cancel.bytes[index: index + 3] == b'\x25\x0d\05':
+                # Movelist.print_bytes(cancel.bytes[index - 18: index + 2])
+                bytes = cancel.bytes
+                if check_for_end:
+                    if bytes[index: index + 2] == b'\x02':
+                        fw.write('02\n')
+                        fw.write('-------------------------------\n')
+                        break
 
-    movelists = load_all_movelists()
+                next_byte = int(bytes[index])
+
+                if next_byte in [CC.EXE_13.value, CC.EXE_19.value, CC.EXE_25.value, CC.EXE_A5.value]:
+                    fw.write(Movelist.bytes_as_string(bytes[running_index: index + 3]) + '\n')
+                    running_index = index + 3
+                    check_for_end = True
+                    index += 2
+                elif next_byte in [CC.START.value, CC.ARG_8B.value, CC.ARG_8A.value, CC.ARG_89.value, CC.PEN_29.value, CC.PEN_28.value, CC.PEN_2A.value]:
+                    index += 2
+                index += 1
+
+    #input_file = 'movelists/xianghua_movelist.byte.m0000' #these come from cheat engine, memory viewer -> memory regions -> (movelist address) . should be 0x150000 bytes
+
+
+
 
     counted_bytes = []
-    for mvlist in movelists:
-        for attack in mvlist.all_attacks:
-            if attack.hit_effect <= 0xff:
-                counted_bytes.append(hex(attack.hit_effect))
+
+    #movelists = load_all_movelists()
+    #movelists = [Movelist.from_file('movelists/tira_movelist.byte.m0000')]
+    #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
+    movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
+
+
+    '''for movelist in movelists:
+        with open('cancels/c_{}'.format(movelist.name), 'w') as fw:
+            print('making cancels for {}'.format(movelist.name))
+            print_out_cancel_blocks(movelist, fw)'''
+
+    cancels = sorted(movelists[0].all_cancels.values(), key = lambda x: x.bytes.count(b'\x19'))
+    hack_neutral = (cancels[-1]) #incredibly hackish way to find neutral
+    Movelist.parse_neutral(hack_neutral)
+
+    '''unlisted_singles = []
+    for movelist in movelists:
+        for cancel in movelist.all_cancels.values():
+            try:
+                unlisted_singles += Movelist.parse_neutral(cancel)
+            except Exception as e:
+                print('ERROR: movelist {}'.format(movelist.name))
+                raise e
+    print('\n'.join('SINGLE_{:02x} = 0x{:02x}'.format(x, x) for x in sorted(set([y[0] for y in unlisted_singles]))))'''
+
+    #for i in range(len(unlisted_singles) - 1):
+        #if unlisted_singles[i][1] == unlisted_singles[i + 1][1] + 1:
+            #print('potential inst:{:02x}'.format(unlisted_singles[i][0]))
 
     print(sorted(Counter(counted_bytes)))
-
 
 

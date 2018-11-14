@@ -66,8 +66,8 @@ class SC6GameReader:
                         if  movelist_sample == MovelistParser.Movelist.STARTER_INT:
                             p1_movelist_data = GetDataBlockAtEndOfPointerOffsetList(process_handle, 0, [AddressMap.p1_movelist_address], AddressMap.MOVELIST_BYTES)
                             p2_movelist_data = GetDataBlockAtEndOfPointerOffsetList(process_handle, 0, [AddressMap.p2_movelist_address], AddressMap.MOVELIST_BYTES)
-                            self.p1_movelist = MovelistParser.Movelist(p1_movelist_data)
-                            self.p2_movelist = MovelistParser.Movelist(p2_movelist_data)
+                            self.p1_movelist = MovelistParser.Movelist(p1_movelist_data, 'p1')
+                            self.p2_movelist = MovelistParser.Movelist(p2_movelist_data, 'p2')
 
                     p1_startup_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p1_startup_block_breadcrumb, 0x100)
                     p2_startup_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p2_startup_block_breadcrumb, 0x100)
@@ -174,7 +174,7 @@ class SC6StartupBlock:
             # print(e)
 
         self.startup_frames = GetValueFromDataBlock(data_block, 0x44, is_short=True) #1 less than the common terminology
-        #self.end_of_active_frames = GetValueFromDataBlock(data_block, 0x46, is_short=True) #usually only 1 or 2 higher than startup frames #??? this is, something else
+        self.end_of_active_frames = GetValueFromDataBlock(data_block, 0x46, is_short=True) #usually only 1 or 2 higher than startup frames #??? this is, something else
         self.damage = GetValueFromDataBlock(data_block, 0x48, is_short=True)
         #0x4A is a constant, though different for p1 and p2 same character (01 22 vs 01 BB)
         #0x4C 4 byte constant? 01 D1 vs 01 D9
