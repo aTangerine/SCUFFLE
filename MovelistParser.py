@@ -184,9 +184,15 @@ class Movelist:
             cancel = Cancel(raw_bytes[ca: self.all_moves[i + 1].cancel_address], ca, i)
             self.all_cancels[ca] = cancel
 
+        self.move_ids_to_commands = self.parse_neutral()
 
 
 
+    def get_command_by_move_id(self, move_id):
+        if move_id in self.move_ids_to_commands:
+            return self.move_ids_to_commands[move_id]
+        else:
+            return '???'
 
     def print_cancel_bytes_by_move_id(self, move_id):
         if move_id < len(self.all_moves):
@@ -260,9 +266,16 @@ class Movelist:
             raw_bytes = fr.read()
         return Movelist(raw_bytes, filename)
 
-    def parse_neutral(cancel : Cancel):
+    def parse_neutral(self):
+        cancels = sorted(self.all_cancels.values(), key=lambda x: x.bytes.count(b'\x19')) # incredibly hackish way to find neutral
+        cancel = (cancels[-1])
+
+        move_ids_to_commands = {}
+        unlisted_singles = []  # possibly used in future if new characters are added or current movelists get new moves????
+
+
+        #state machine variables
         args_expected = 0
-        unlisted_singles = []
         buf_89 = [-1, -1, -1, -1, -1]
         buf_8a = [-1, -1, -1, -1, -1]
         buf_8b = [-1, -1, -1, -1, -1]
@@ -275,7 +288,9 @@ class Movelist:
         buffers = [buf_89, buf_8a, buf_8b]
 
         for i in range(len((cancel.bytes))):
-            if args_expected == 0:
+            if args_expected != 0:
+                args_expected -= 1
+            else:
                 inst = int(cancel.bytes[i])
                 try:
                     next_instruction = CC(inst)
@@ -287,6 +302,7 @@ class Movelist:
 
                 ccs_with_args = [CC.START, CC.ARG_8A, CC.ARG_8B, CC.ARG_89, CC.EXE_19, CC.EXE_25, CC.EXE_A5, CC.EXE_13, CC.PEN_2A, CC.PEN_28, CC.PEN_29]
 
+                #if it's an argument instruction, we store it for future use in an exe instruction
                 if next_instruction in ccs_with_args:
                     args_expected = 2
                     if next_instruction in [CC.ARG_89, CC.ARG_8A, CC.ARG_8B]:
@@ -307,32 +323,40 @@ class Movelist:
                             if next_8b_is_input:
                                 button_code = buf_8b[-1]
                                 next_8b_is_input = False
-
+                #if it's an exe instruction, we 'execute' it, reading from the proper buffers to provide arguments
                 if next_instruction in [CC.EXE_19]:
+                    move_id, dir = buf_8b[-1], buf_89[-1]
+                    try:
+                        button = PaddedButton(button_code).name
+                    except Exception as e:
+                        button = button_code
+
                     if buf_89[-1] == 0xffff: #dunno what these are, but they aren't moves???
                         next_19_is_8way_move = False
                         next_19_is_normal_move = False
-                    elif next_19_is_normal_move:
-                        next_19_is_normal_move = False
 
-                        if not while_crouching_flag:
-                            print('(move:{} dir:{} but:{})'.format(buf_8b[-1], buf_89[-1], button_code))
-                        else:
-                            print('(move:{} WC dir:{} but:{})'.format(buf_8b[-1], buf_89[-1], button_code))
-
-                        if not while_crouching_flag:
+                    elif next_19_is_normal_move or next_19_is_8way_move:
+                        if not while_crouching_flag and next_19_is_normal_move: #hack way to guess when we've reached while crouching moves
                             if button_code in while_standing_signs:
                                 if button_code != while_standing_signs[-1]:
                                     while_crouching_flag = True
                             else:
                                 while_standing_signs.append(button_code)
-                    elif next_19_is_8way_move:
-                        print('(move:{} 8waydir:{} but:{})'.format(buf_8b[-1], buf_89[-1], button_code))
-                        next_19_is_8way_move = False
-            else:
-                args_expected -= 1
 
-        return unlisted_singles
+                        command = '{}{}'.format(dir, button.replace('_', '+'))
+
+                        if next_19_is_8way_move:
+                            command = '{}{}'.format(dir, command)
+                        elif while_crouching_flag:
+                            command = 'WC {}'.format(command)
+
+                        move_ids_to_commands[move_id] = command
+
+                        #cleanup
+                        next_19_is_normal_move = False
+                        next_19_is_8way_move = False
+
+        return move_ids_to_commands
 
 
 
@@ -402,9 +426,9 @@ if __name__ == "__main__":
             print('making cancels for {}'.format(movelist.name))
             print_out_cancel_blocks(movelist, fw)'''
 
-    cancels = sorted(movelists[0].all_cancels.values(), key = lambda x: x.bytes.count(b'\x19'))
-    hack_neutral = (cancels[-1]) #incredibly hackish way to find neutral
-    Movelist.parse_neutral(hack_neutral)
+    #cancels = sorted(movelists[0].all_cancels.values(), key = lambda x: x.bytes.count(b'\x19'))
+    #hack_neutral = (cancels[-1]) #incredibly hackish way to find neutral
+    print(movelists[0].parse_neutral())
 
     '''unlisted_singles = []
     for movelist in movelists:

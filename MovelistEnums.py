@@ -14,7 +14,17 @@ class Button(Enum):
     A_B_K = 0x07
 
 
+class PaddedButton(Enum):
+    A = 0x0001
+    B = 0x0002
+    K = 0x0004
 
+    B_K = 0x0600
+    A_B = 0x0300
+    A_G = 0x0900
+    K_G = 0x0C00
+
+    A_B_K = 0x0700
 
 class InputType(Enum):
     Button = 0x06

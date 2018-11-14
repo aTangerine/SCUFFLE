@@ -37,9 +37,10 @@ class GameStateManager:
 
     def FormatFrameString(p_str, p : SoulCaliburGameState.PlayerSnapshot):
         b, h, c, t = FrameAnalyzer.CalculateFrameAdvantage(p)
-        str = "FDO:{}:{:^4}|{:^4}|{:^4}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|".format(
+        str = "FDO:{}:{:^4}|{:^5}|{:^4}|{:^4}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|".format(
                                                         p_str,
                                                         p.movement_block.movelist_id,
+                                                        p.movelist.get_command_by_move_id(p.movement_block.movelist_id),
                                                         p.startup_block.startup_frames + 1,
                                                         p.startup_block.attack_type,
                                                         b,

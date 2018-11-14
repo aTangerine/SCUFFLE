@@ -13,25 +13,27 @@ from GUI_Overlay import CurrentColorScheme, ColorSchemeEnum
 
 class DataColumns(Enum):
     XidX = 0
-    impX = 1
-    AT = 2
-    XBLOCKX = 3
-    XXHITXX = 4
-    COUNTER = 5
-    DAMX = 6
-    GDAM = 7
-    A = 8
-    WHIFF = 9
+    XCOMX = 1
+    impX = 2
+    AT = 3
+    XBLOCKX = 4
+    XXHITXX = 5
+    COUNTER = 6
+    DAMX = 7
+    GDAM = 8
+    A = 9
+    WHIFF = 10
     #BSTN = 7
     #HSTN = 8
     #CSTN = 9
-    NOTE = 10
+    NOTE = 11
 
     def config_name():
         return "DataColumns"
 
 DataColumnsToMenuNames = {
     DataColumns.XidX : 'internal move id number',
+    DataColumns.XCOMX : 'input command',
     DataColumns.impX : 'the startup frames before the move becomes active',
     DataColumns.AT : 'the type of attack (low/mid/high/throw/special)',
     DataColumns.XBLOCKX : 'frame advantage when the move is blocked',

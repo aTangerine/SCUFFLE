@@ -99,8 +99,8 @@ class SC6GameReader:
                     p2_is_currently_armoring = GetValueFromAddress(process_handle, AddressMap.p2_is_currently_armoring, is_short=True)
                     p2_global = SC6GlobalBlock(p2_last_attack_address, p2_total_animation_frames, p2_end_of_move_cancelable_frames, p2_is_currently_jumping, p2_is_currently_crouching, p2_is_currently_guard_impacting, p2_is_currently_armoring)
 
-                    value_p1 = PlayerSnapshot(p1_startup_block, p1_movement_block, p1_timer_block, p1_global)
-                    value_p2 = PlayerSnapshot(p2_startup_block, p2_movement_block, p2_timer_block, p2_global)
+                    value_p1 = PlayerSnapshot(self.p1_movelist, p1_startup_block, p1_movement_block, p1_timer_block, p1_global)
+                    value_p2 = PlayerSnapshot(self.p2_movelist, p2_startup_block, p2_movement_block, p2_timer_block, p2_global)
 
 
 
@@ -253,7 +253,8 @@ class SC6TimerBlock:
         return "move_id: {}".format(self.move_id)
 
 class PlayerSnapshot:
-    def __init__(self, startup_data_block, movement_data_block, timer_data_block, global_block : SC6GlobalBlock):
+    def __init__(self, movelist, startup_data_block, movement_data_block, timer_data_block, global_block : SC6GlobalBlock):
+        self.movelist = movelist
         self.movement_block = SC6MovementBlock(movement_data_block)
         self.startup_block = SC6StartupBlock(startup_data_block)
         self.timer_block = SC6TimerBlock(timer_data_block)
@@ -289,7 +290,11 @@ if __name__ == "__main__":
                 old_state = new_state
                 print(new_state)
                 if myReader.p1_movelist != None:
-                    myReader.p1_movelist.print_cancel_bytes_by_move_id(new_state.p1.movement_block.movelist_id)
+                    #myReader.p1_movelist.print_cancel_bytes_by_move_id(new_state.p1.movement_block.movelist_id)
+
+                    print(myReader.p1_movelist.get_command_by_move_id(new_state.p1.movement_block.movelist_id))
+
+
 
 
             #if v1.movement_block.movement_type != ov1.movement_block.movement_type or v2.movement_block.movement_type != ov2.movement_block.movement_type:
