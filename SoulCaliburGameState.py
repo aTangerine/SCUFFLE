@@ -68,6 +68,8 @@ class SC6GameReader:
                             p2_movelist_data = GetDataBlockAtEndOfPointerOffsetList(process_handle, 0, [AddressMap.p2_movelist_address], AddressMap.MOVELIST_BYTES)
                             self.p1_movelist = MovelistParser.Movelist(p1_movelist_data, 'p1')
                             self.p2_movelist = MovelistParser.Movelist(p2_movelist_data, 'p2')
+                        else:
+                            return False
 
                     p1_startup_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p1_startup_block_breadcrumb, 0x100)
                     p2_startup_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p2_startup_block_breadcrumb, 0x100)
@@ -291,8 +293,8 @@ if __name__ == "__main__":
                 print(new_state)
                 if myReader.p1_movelist != None:
                     #myReader.p1_movelist.print_cancel_bytes_by_move_id(new_state.p1.movement_block.movelist_id)
-
-                    print(myReader.p1_movelist.get_command_by_move_id(new_state.p1.movement_block.movelist_id))
+                    print(myReader.p1_movelist.parse_move(new_state.p1.movement_block.movelist_id))
+                    #print(myReader.p1_movelist.get_command_by_move_id(new_state.p1.movement_block.movelist_id))
 
 
 

@@ -1,5 +1,9 @@
 from enum import Enum
 
+
+def enum_has_value(cls, value):
+    return any(value == item.value for item in cls)
+
 class Button(Enum):
     A = 0x01
     B = 0x02
@@ -18,6 +22,7 @@ class PaddedButton(Enum):
     A = 0x0001
     B = 0x0002
     K = 0x0004
+    G = 0x0008
 
     B_K = 0x0600
     A_B = 0x0300
@@ -26,13 +31,28 @@ class PaddedButton(Enum):
 
     A_B_K = 0x0700
 
+    Forward = 0x1008
+    Forward_ALT = 0x3008
+
+
+
+
 class InputType(Enum):
-    Button = 0x06
-    HoldButton = 0x20
+    Press = 0x06
+    Hold = 0x20
+    Direction = 0x13AE
+    Direction_ALT = 0x0002
+
+
     OnHit = 0x0B #counter hit uses the same code signature but are about 3x as long so the counterhit part must be in there somewhere
+
+
     #PressDown = 0x13af /0x13ae ??
     #PressBack =  0x0002 /0x1002 ??
     #0x0120 #geralt, super?? + hold button
+
+
+
 
 class CC(Enum): #Cancel codes for the cancel block, mostly we expect (CC XX XX CC XX XX ...) where CC is the cancel codes and XX is the variable provided to them
     START = 0x01 #begins every block(?)

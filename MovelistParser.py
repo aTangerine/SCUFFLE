@@ -140,14 +140,74 @@ class Cancel:
         self.address = address
         self.bytes = bytes
         self.move_id = move_id
+
         #print(len(self.bytes))
         #print(self.bytes[-4:])
 
+
+class Link:
+    def __init__(self, conditions, move_id):
+        self.conditions = conditions
+        self.move_id = move_id
+        self.hold = False
+        self.button_press = self.parse_button()
+
+        self.auto_cancel = self.parse_auto_cancel()
+
+    def get_command_string(self):
+        if self.is_auto_cancel and not self.button_press:
+            return '.'
+        if self.hold:
+            return '[{}]'.format(self.button_press.name)
+        return self.button_press.name
+
+    def parse_button(self):
+        for type, c in self.conditions:
+            index = 0
+            while index < len(c) - 5:
+                b = int(c[index]) #we're looking for the pattern 8b 00 06 8b [button argument]
+                if b == 0x8b:
+                    arg_1 = b2i(c, index + 1, big_endian=True)
+                    if arg_1 == InputType.Press.value:
+                        if (int(c[index + 3]) == 0x8b):
+                            arg_2 = b2i(c, index + 4, big_endian=True)
+                            if enum_has_value(PaddedButton, arg_2):
+                                return PaddedButton(arg_2)
+                    if arg_1 == InputType.Hold.value:
+                        if (int(c[index + 3]) == 0x8b):
+                            arg_2 = b2i(c, index + 4, big_endian=True)
+                            if enum_has_value(PaddedButton, arg_2):
+                                self.hold = True
+                                return PaddedButton(arg_2)
+
+                index += 3
+        return None
+
+    def parse_auto_cancel(self):
+        if len(self.conditions) == 1:
+            if len(self.conditions[0][1]) == 3:
+                if int(self.conditions[0][1][0]) == 0x89:
+                    return True
+        elif len(self.conditions) == 0:
+            return True
+        return False
+
+    def is_auto_cancel(self):
+        return self.auto_cancel
+
+    def is_button_press(self):
+        if self.button_press == None:
+            return False
+        else:
+            return True
 
 class Movelist:
     HEADER_LENGTH = 0x30
     #STARTER_STRING = 'KH11'
     STARTER_INT = 0x3131484b
+
+    THREE_BYTE_INSTRUCTIONS = [CC.START, CC.ARG_8A, CC.ARG_8B, CC.ARG_89, CC.EXE_19, CC.EXE_25, CC.EXE_A5, CC.EXE_13, CC.PEN_2A, CC.PEN_28, CC.PEN_29]
+
     def __init__(self, raw_bytes, name):
         self.name = name.replace('/', '')
 
@@ -179,12 +239,35 @@ class Movelist:
             self.all_attacks.append(attack)
 
         self.all_cancels = {}
+        self.move_ids_to_cancels = {}
         for i in range(0, len(self.all_moves) - 1):
             ca = self.all_moves[i].cancel_address
             cancel = Cancel(raw_bytes[ca: self.all_moves[i + 1].cancel_address], ca, i)
             self.all_cancels[ca] = cancel
+            self.move_ids_to_cancels[i] = cancel
 
         self.move_ids_to_commands = self.parse_neutral()
+
+        move_ids_to_check = list(self.move_ids_to_commands.keys())
+
+        while len(move_ids_to_check) > 0:
+            move_id = move_ids_to_check.pop(0)
+            original_command = self.move_ids_to_commands[move_id]
+            #ids_to_commands = self.parse_move(move_id)
+            ids_to_commands = {}
+            for link in self.condition_parse(move_id):
+                if link.is_button_press() or link.is_auto_cancel():
+                    ids_to_commands[link.move_id] = link.get_command_string()
+
+
+
+
+            for cancelable_move_id in ids_to_commands:
+                if not cancelable_move_id in self.move_ids_to_commands.keys():
+                    new_command = ids_to_commands[cancelable_move_id]
+                    self.move_ids_to_commands[cancelable_move_id] = '{}{}'.format(original_command, new_command)
+                    move_ids_to_check.append(cancelable_move_id)
+
 
 
 
@@ -266,99 +349,276 @@ class Movelist:
             raw_bytes = fr.read()
         return Movelist(raw_bytes, filename)
 
-    def parse_neutral(self):
-        cancels = sorted(self.all_cancels.values(), key=lambda x: x.bytes.count(b'\x19')) # incredibly hackish way to find neutral
-        cancel = (cancels[-1])
-
+    def parse_move(self, move_id):
         move_ids_to_commands = {}
-        unlisted_singles = []  # possibly used in future if new characters are added or current movelists get new moves????
 
+        if move_id in self.move_ids_to_cancels.keys():
+            cancel = self.move_ids_to_cancels[move_id]
+        else:
+            return move_ids_to_commands
 
-        #state machine variables
-        args_expected = 0
-        buf_89 = [-1, -1, -1, -1, -1]
-        buf_8a = [-1, -1, -1, -1, -1]
+        i = 0
         buf_8b = [-1, -1, -1, -1, -1]
-        button_code = None
-        next_8b_is_input = False
-        next_19_is_normal_move = False
-        next_19_is_8way_move = False
-        while_crouching_flag = False
-        while_standing_signs = [-1]
-        buffers = [buf_89, buf_8a, buf_8b]
+        buf_89 = [-1, -1, -1, -1, -1]
 
-        for i in range(len((cancel.bytes))):
-            if args_expected != 0:
-                args_expected -= 1
+        button_code = -1
+        button_code_code = -1
+
+        expecting_cancel = False
+
+        while i < len(cancel.bytes):
+            raw = int(cancel.bytes[i])
+            inst = CC(raw)
+            if inst in Movelist.THREE_BYTE_INSTRUCTIONS:
+                arg = b2i(cancel.bytes, i + 1, big_endian=True)
+                if inst == CC.ARG_8B:
+                    buf_8b.append(arg)
+                if inst == CC.ARG_89:
+                    buf_89.append(arg)
+                if inst == CC.EXE_A5:
+                    if arg == 0x0102 or arg == 0x0103 or arg == 0x1402:
+                        button_code = buf_8b[-1]
+                        button_code_code = buf_8b[-2]
+                    if arg == 0x2502:
+                        expecting_cancel = True
+                if inst == CC.EXE_25:
+                    if expecting_cancel or True:
+                        expecting_cancel = False
+                        clean_arg = arg >> 8
+                        if clean_arg == 0x07:
+                            move_id = buf_8b[-1]
+                            if move_id < len(self.move_ids_to_cancels):
+                                button = Movelist.button_parse(button_code_code, button_code)
+                                move_ids_to_commands[move_id] = button
+                                #print('{} -> x{}'.format(button, buf_8b[-1]))
+
+            if inst in Movelist.THREE_BYTE_INSTRUCTIONS:
+                i += 3
             else:
-                inst = int(cancel.bytes[i])
-                try:
-                    next_instruction = CC(inst)
-                except Exception as e:
-                    print('ERROR move_id:{} hex:{}'.format(cancel.move_id, hex(inst)))
-                    unlisted_singles.append((inst, i))
-                    next_instruction = inst
-                    #raise e
-
-                ccs_with_args = [CC.START, CC.ARG_8A, CC.ARG_8B, CC.ARG_89, CC.EXE_19, CC.EXE_25, CC.EXE_A5, CC.EXE_13, CC.PEN_2A, CC.PEN_28, CC.PEN_29]
-
-                #if it's an argument instruction, we store it for future use in an exe instruction
-                if next_instruction in ccs_with_args:
-                    args_expected = 2
-                    if next_instruction in [CC.ARG_89, CC.ARG_8A, CC.ARG_8B]:
-                        try:
-                            buffers[abs(0x89 - inst)].append(b2i(cancel.bytes[i+1:], 0, big_endian = True))
-                        except Exception as e:
-                            print('error move_id: {} inst: {} counter: {}'.format(cancel.move_id, hex(inst), i))
-                            raise e
-
-                        if next_instruction == CC.ARG_8A:
-                            if buf_8a[-1] == 0x0102: #input marker
-                                next_8b_is_input = True
-                            if buf_8a[-1] == 0x0103:
-                                next_19_is_8way_move = True
-                            if buf_8a[-1] == 0x003D:
-                                next_19_is_normal_move = True
-                        if next_instruction in [CC.ARG_8B]:
-                            if next_8b_is_input:
-                                button_code = buf_8b[-1]
-                                next_8b_is_input = False
-                #if it's an exe instruction, we 'execute' it, reading from the proper buffers to provide arguments
-                if next_instruction in [CC.EXE_19]:
-                    move_id, dir = buf_8b[-1], buf_89[-1]
-                    try:
-                        button = PaddedButton(button_code).name
-                    except Exception as e:
-                        button = button_code
-
-                    if buf_89[-1] == 0xffff: #dunno what these are, but they aren't moves???
-                        next_19_is_8way_move = False
-                        next_19_is_normal_move = False
-
-                    elif next_19_is_normal_move or next_19_is_8way_move:
-                        if not while_crouching_flag and next_19_is_normal_move: #hack way to guess when we've reached while crouching moves
-                            if button_code in while_standing_signs:
-                                if button_code != while_standing_signs[-1]:
-                                    while_crouching_flag = True
-                            else:
-                                while_standing_signs.append(button_code)
-
-                        command = '{}{}'.format(dir, button.replace('_', '+'))
-
-                        if next_19_is_8way_move:
-                            command = '{}{}'.format(dir, command)
-                        elif while_crouching_flag:
-                            command = 'WC {}'.format(command)
-
-                        move_ids_to_commands[move_id] = command
-
-                        #cleanup
-                        next_19_is_normal_move = False
-                        next_19_is_8way_move = False
+                i += 1
 
         return move_ids_to_commands
 
 
+    def button_parse(type_code, input_code):
+        if enum_has_value(InputType, type_code) and enum_has_value(PaddedButton, input_code):
+            type = InputType(type_code)
+            input = PaddedButton(input_code)
+            if type == InputType.Press:
+                return '{}'.format(input.name)
+            elif type == InputType.Direction or type == InputType.Direction_ALT:
+                codes_to_directions = {
+                    PaddedButton.Forward : '6',
+                    PaddedButton.Forward_ALT: '6',
+
+
+                }
+                if input in codes_to_directions.keys():
+                    return'{}'.format(codes_to_directions[input])
+                else:
+                    return 'dir {:04x}'.format(input_code)
+
+            elif type == InputType.Hold:
+                return '[{}]'.format(input.name)
+            else:
+                return '{} {}'.format(type.name, input.name)
+        else:
+            try:
+                return '{:04x}:{:04x}'.format(type_code, input_code)
+            except Exception as e:
+                import sys
+                print ('{} {}'.format(type_code, input_code), file=sys.stderr)
+                raise e
+
+
+    def parse_neutral(self):
+        cancels = sorted(self.all_cancels.values(), key=lambda x: x.bytes.count(b'\x19')) # incredibly hackish way to find neutral
+        move_ids_to_commands = {}
+        for cancel in (cancels[-50:]):
+
+            #state machine variables
+            args_expected = 0
+            buf_89 = [-1, -1, -1, -1, -1]
+            buf_8a = [-1, -1, -1, -1, -1]
+            buf_8b = [-1, -1, -1, -1, -1]
+            button_code = None
+            next_8b_is_input = False
+            next_19_is_normal_move = False
+            next_19_is_8way_move = False
+            while_crouching_flag = False
+            while_standing_signs = [-1]
+            buffers = [buf_89, buf_8a, buf_8b]
+
+
+            for i in range(len((cancel.bytes))):
+                if args_expected != 0:
+                    args_expected -= 1
+                else:
+                    inst = int(cancel.bytes[i])
+                    try:
+                        next_instruction = CC(inst)
+                    except Exception as e:
+                        print('ERROR move_id:{} hex:{}'.format(cancel.move_id, hex(inst)))
+                        #unlisted_singles.append((inst, i))
+                        next_instruction = inst
+                        #raise e
+
+
+
+                    #if it's an argument instruction, we store it for future use in an exe instruction
+                    if next_instruction in Movelist.THREE_BYTE_INSTRUCTIONS:
+                        args_expected = 2
+                        if next_instruction in [CC.ARG_89, CC.ARG_8A, CC.ARG_8B]:
+                            try:
+                                buffers[abs(0x89 - inst)].append(b2i(cancel.bytes[i+1:], 0, big_endian = True))
+                            except Exception as e:
+                                print('error move_id: {} inst: {} counter: {}'.format(cancel.move_id, hex(inst), i))
+                                raise e
+
+                            if next_instruction == CC.ARG_8A:
+                                if buf_8a[-1] == 0x0102: #input marker
+                                    next_8b_is_input = True
+                                if buf_8a[-1] == 0x0103:
+                                    next_19_is_8way_move = True
+                                if buf_8a[-1] == 0x003D:
+                                    next_19_is_normal_move = True
+                            if next_instruction in [CC.ARG_8B]:
+                                if next_8b_is_input:
+                                    button_code = buf_8b[-1]
+                                    next_8b_is_input = False
+                    #if it's an exe instruction, we 'execute' it, reading from the proper buffers to provide arguments
+                    if next_instruction in [CC.EXE_19]:
+                        move_id, dir = buf_8b[-1], buf_89[-1]
+                        try:
+                            button = PaddedButton(button_code).name
+                            button = button.replace('_', '+')
+                        except Exception as e:
+                            button = button_code
+
+                        if buf_89[-1] == 0xffff: #dunno what these are, but they aren't moves???
+                            next_19_is_8way_move = False
+                            next_19_is_normal_move = False
+
+                        elif next_19_is_normal_move or next_19_is_8way_move:
+                            if not while_crouching_flag and next_19_is_normal_move: #hack way to guess when we've reached while crouching moves
+                                if button_code in while_standing_signs:
+                                    if button_code != while_standing_signs[-1]:
+                                        while_crouching_flag = True
+                                else:
+                                    while_standing_signs.append(button_code)
+
+                            command = '{}{}'.format(dir, button)
+
+                            if next_19_is_8way_move:
+                                command = '{}{}'.format(dir, command)
+                            elif while_crouching_flag:
+                                command = 'WC {}'.format(command)
+
+                            move_ids_to_commands[move_id] = command
+
+                            #cleanup
+                            next_19_is_normal_move = False
+                            next_19_is_8way_move = False
+
+        return move_ids_to_commands
+
+    def pen_parse(self, move_id):
+        bytes = self.move_ids_to_cancels[move_id].bytes
+
+        paper = []
+        for _ in range(4 * len(bytes)):
+            #paper.append(int(b'\x00'))
+            paper.append(0)
+
+        pos = 0
+        index = 0
+        while index < len(bytes):
+            inst =  CC(int(bytes[index]))
+            if inst in (CC.PEN_2A, CC.PEN_28, CC.PEN_29):
+                arg = b2i(bytes, index + 1, big_endian=True)
+                pos = arg
+                index += 3
+            elif inst in (CC.ARG_8B, CC.ARG_8A, CC.ARG_89):
+                for _ in range(3):
+                    paper[pos] = int(bytes[index])
+                    pos += 1
+                    index += 1
+            elif inst in (CC.EXE_25, CC.EXE_A5, CC.EXE_19, CC.EXE_13):
+                #print('{} {}: ({})'.format(inst, pos, Movelist.bytes_as_string((paper[max(pos - 29, 0):pos]))))
+                if inst == CC.EXE_25:
+                    print('{} {} {} [{}]: ({})'.format(inst, int(bytes[index + 1]), int(bytes[index + 2]), pos, Movelist.bytes_as_string((paper[max(pos - 30, 0):pos]))))
+                index += 3
+            else:
+                paper[pos] = int(bytes[index])
+                print('{}'.format(paper[pos]))
+                pos += 1
+                index += 1
+
+        print(paper)
+
+    def condition_parse(self, move_id):
+        if not move_id < len(self.move_ids_to_cancels) or move_id < 0:
+            return []
+        else:
+            bytes = self.move_ids_to_cancels[move_id].bytes
+            buf_all = []
+
+            links = []
+
+            conditions = []
+            index = 0
+            buf_8b = []
+            while index < len(bytes):
+                inst = CC(int(bytes[index]))
+                if inst == CC.START:
+                    index += 3
+                elif inst in (CC.PEN_2A, CC.PEN_28, CC.PEN_29):
+                    #arg = b2i(bytes, index + 1, big_endian=True)
+                    #pos = arg
+                    index += 3
+                elif inst in (CC.ARG_8B, CC.ARG_8A, CC.ARG_89):
+                    if inst == CC.ARG_8B:
+                        arg = b2i(bytes, index + 1, big_endian=True)
+                        buf_8b.append(arg)
+
+                    for _ in range(3):
+                        buf_all.append(int(bytes[index]))
+                        index += 1
+
+                elif inst in (CC.EXE_25, CC.EXE_A5, CC.EXE_19, CC.EXE_13):
+                    # print('{} {}: ({})'.format(inst, pos, Movelist.bytes_as_string((paper[max(pos - 29, 0):pos]))))
+                    if inst == CC.EXE_A5: #add condition
+                        condition_type = int(bytes[index + 1])
+                        condition_arg_number = int(bytes[index + 2])
+                        args = bytes[index - (3 * condition_arg_number): index]
+                        conditions.append((condition_type, args))
+
+                    if inst == CC.EXE_25: #add cancel
+                        if len(conditions) > 0:
+                            for type, args in conditions:
+                                pass
+                                #print('{} : {}'.format(type, Movelist.bytes_as_string(args)))
+
+                        condition_type = int(bytes[index + 1])
+                        condition_arg_number = int(bytes[index + 2])
+                        args = bytes[index - (3 * condition_arg_number): index]
+                        state = -1
+                        for i, b in enumerate(args):
+                            if b == 0x8b:
+                                state = b2i(args, i + 1, big_endian=True)
+                                break
+                        links.append(Link(conditions, state))
+                        #print('{} {} {}: ({})'.format(inst, int(bytes[index + 1]), int(bytes[index + 2]), state))
+
+                        conditions = []
+                    index += 3
+                else:
+                    #paper[pos] = int(bytes[index])
+                    #print('{}'.format(inst))
+                    conditions = []
+                    index += 1
+
+            return links
 
 
 
@@ -415,7 +675,7 @@ if __name__ == "__main__":
     counted_bytes = []
 
     #movelists = load_all_movelists()
-    #movelists = [Movelist.from_file('movelists/tira_movelist.byte.m0000')]
+    #movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
     movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
@@ -428,7 +688,18 @@ if __name__ == "__main__":
 
     #cancels = sorted(movelists[0].all_cancels.values(), key = lambda x: x.bytes.count(b'\x19'))
     #hack_neutral = (cancels[-1]) #incredibly hackish way to find neutral
-    print(movelists[0].parse_neutral())
+    #print(movelists[0].parse_neutral())
+
+    #movelists[0].pen_parse(257)
+    #links = movelists[0].condition_parse(257)
+    #links = movelists[0].condition_parse(259)
+    links = movelists[0].condition_parse(382)
+    print('')
+    for link in links:
+        if link.is_button_press():
+            print('{} -> {}'.format(link.button_press, link.move_id))
+        if link.is_auto_cancel:
+            print('auto -> {}'.format(link.move_id))
 
     '''unlisted_singles = []
     for movelist in movelists:
