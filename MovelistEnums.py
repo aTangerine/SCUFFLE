@@ -42,6 +42,7 @@ class InputType(Enum):
     Hold = 0x20
     Direction = 0x13AE
     Direction_ALT = 0x0002
+    No_SC_Press =0x8f #for when you're not in soul charge???
 
 
     OnHit = 0x0B #counter hit uses the same code signature but are about 3x as long so the counterhit part must be in there somewhere

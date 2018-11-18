@@ -141,6 +141,7 @@ class Cancel:
         self.bytes = bytes
         self.move_id = move_id
 
+
         #print(len(self.bytes))
         #print(self.bytes[-4:])
 
@@ -150,6 +151,11 @@ class Link:
         self.conditions = conditions
         self.move_id = move_id
         self.hold = False
+
+        #if self.move_id == 264:
+        #print(self.move_id)
+        #print(self.conditions)
+        #print("----------")
         self.button_press = self.parse_button()
 
         self.auto_cancel = self.parse_auto_cancel()
@@ -164,11 +170,12 @@ class Link:
     def parse_button(self):
         for type, c in self.conditions:
             index = 0
+
             while index < len(c) - 5:
                 b = int(c[index]) #we're looking for the pattern 8b 00 06 8b [button argument]
                 if b == 0x8b:
                     arg_1 = b2i(c, index + 1, big_endian=True)
-                    if arg_1 == InputType.Press.value:
+                    if arg_1 == InputType.Press.value or arg_1 == InputType.No_SC_Press.value:
                         if (int(c[index + 3]) == 0x8b):
                             arg_2 = b2i(c, index + 4, big_endian=True)
                             if enum_has_value(PaddedButton, arg_2):
@@ -185,8 +192,11 @@ class Link:
 
     def parse_auto_cancel(self):
         if len(self.conditions) == 1:
-            if len(self.conditions[0][1]) == 3:
+            if len(self.conditions[0][1]) == 3: #this move auto cancels at a specific frame
                 if int(self.conditions[0][1][0]) == 0x89:
+                    return True
+            if len(self.conditions[0][1]) == 6: #this move auto cancels during soul charge??
+                if int(self.conditions[0][1][0]) == 0x89 and int(self.conditions[0][1][3]) == 0x8b:
                     return True
         elif len(self.conditions) == 0:
             return True
@@ -257,15 +267,15 @@ class Movelist:
             ids_to_commands = {}
             for link in self.condition_parse(move_id):
                 if link.is_button_press() or link.is_auto_cancel():
-                    ids_to_commands[link.move_id] = link.get_command_string()
-
-
-
+                    ids_to_commands[link.move_id] = link.get_command_string().replace('_', '+')
 
             for cancelable_move_id in ids_to_commands:
                 if not cancelable_move_id in self.move_ids_to_commands.keys():
                     new_command = ids_to_commands[cancelable_move_id]
-                    self.move_ids_to_commands[cancelable_move_id] = '{}{}'.format(original_command, new_command)
+                    if '['  in new_command:
+                        self.move_ids_to_commands[cancelable_move_id] = '{}'.format(original_command[:2 - len(new_command)] + new_command)
+                    else:
+                        self.move_ids_to_commands[cancelable_move_id] = '{}{}'.format(original_command, new_command)
                     move_ids_to_check.append(cancelable_move_id)
 
 
@@ -445,6 +455,7 @@ class Movelist:
             next_8b_is_input = False
             next_19_is_normal_move = False
             next_19_is_8way_move = False
+            next_19_is_backturned_move = False
             while_crouching_flag = False
             while_standing_signs = [-1]
             buffers = [buf_89, buf_8a, buf_8b]
@@ -468,24 +479,29 @@ class Movelist:
                     #if it's an argument instruction, we store it for future use in an exe instruction
                     if next_instruction in Movelist.THREE_BYTE_INSTRUCTIONS:
                         args_expected = 2
-                        if next_instruction in [CC.ARG_89, CC.ARG_8A, CC.ARG_8B]:
-                            try:
-                                buffers[abs(0x89 - inst)].append(b2i(cancel.bytes[i+1:], 0, big_endian = True))
-                            except Exception as e:
-                                print('error move_id: {} inst: {} counter: {}'.format(cancel.move_id, hex(inst), i))
-                                raise e
+                    else:
+                        next_8b_is_input = False
+                    if next_instruction in [CC.ARG_89, CC.ARG_8A, CC.ARG_8B]:
+                        try:
+                            buffers[abs(0x89 - inst)].append(b2i(cancel.bytes[i+1:], 0, big_endian = True))
+                        except Exception as e:
+                            print('error move_id: {} inst: {} counter: {}'.format(cancel.move_id, hex(inst), i))
+                            raise e
 
-                            if next_instruction == CC.ARG_8A:
-                                if buf_8a[-1] == 0x0102: #input marker
-                                    next_8b_is_input = True
-                                if buf_8a[-1] == 0x0103:
-                                    next_19_is_8way_move = True
-                                if buf_8a[-1] == 0x003D:
-                                    next_19_is_normal_move = True
-                            if next_instruction in [CC.ARG_8B]:
-                                if next_8b_is_input:
-                                    button_code = buf_8b[-1]
-                                    next_8b_is_input = False
+                        if next_instruction == CC.ARG_8A:
+                            if buf_8a[-1] == 0x0102 or buf_8a[-1] == 0x0101 or buf_8a[-1] == 0x0103: #input marker
+                                next_8b_is_input = True
+                            if buf_8a[-1] == 0x0103:
+                                next_19_is_8way_move = True
+                            if buf_8a[-1] == 0x003D:
+                                next_19_is_normal_move = True
+                            if buf_8a[-1] == 0x0048:
+                                #next_19_is_backturned_move = True
+                                next_19_is_normal_move = True
+                        if next_instruction in [CC.ARG_8B]:
+                            if next_8b_is_input:
+                                button_code = buf_8b[-1]
+                                next_8b_is_input = False
                     #if it's an exe instruction, we 'execute' it, reading from the proper buffers to provide arguments
                     if next_instruction in [CC.EXE_19]:
                         move_id, dir = buf_8b[-1], buf_89[-1]
@@ -494,6 +510,9 @@ class Movelist:
                             button = button.replace('_', '+')
                         except Exception as e:
                             button = button_code
+
+                        if dir == 0x0096 or dir == 0x0097:
+                            dir = 'bt'
 
                         if buf_89[-1] == 0xffff: #dunno what these are, but they aren't moves???
                             next_19_is_8way_move = False
@@ -512,13 +531,22 @@ class Movelist:
                             if next_19_is_8way_move:
                                 command = '{}{}'.format(dir, command)
                             elif while_crouching_flag:
-                                command = 'WC {}'.format(command)
+                                pass #TODO: better way to detect WC?
+                                #command = 'WC {}'.format(command)
 
-                            move_ids_to_commands[move_id] = command
+
+                            do_replace = True
+                            if move_id in move_ids_to_commands.keys():
+                                if '6' in move_ids_to_commands[move_id] or '4' in move_ids_to_commands[move_id]:
+                                    do_replace = False
+
+                            if do_replace:
+                                move_ids_to_commands[move_id] = command
 
                             #cleanup
                             next_19_is_normal_move = False
                             next_19_is_8way_move = False
+                            next_19_is_backturned_move = False
 
         return move_ids_to_commands
 
@@ -606,7 +634,8 @@ class Movelist:
                         for i, b in enumerate(args):
                             if b == 0x8b:
                                 state = b2i(args, i + 1, big_endian=True)
-                                break
+                                if not state == 0x30CC: #soul charge marker, keep going
+                                    break
                         links.append(Link(conditions, state))
                         #print('{} {} {}: ({})'.format(inst, int(bytes[index + 1]), int(bytes[index + 2]), state))
 
@@ -615,7 +644,7 @@ class Movelist:
                 else:
                     #paper[pos] = int(bytes[index])
                     #print('{}'.format(inst))
-                    conditions = []
+                    #conditions = []
                     index += 1
 
             return links
@@ -676,9 +705,9 @@ if __name__ == "__main__":
 
     #movelists = load_all_movelists()
     #movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
-    #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
+    movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
-    movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
 
 
     '''for movelist in movelists:
@@ -693,8 +722,9 @@ if __name__ == "__main__":
     #movelists[0].pen_parse(257)
     #links = movelists[0].condition_parse(257)
     #links = movelists[0].condition_parse(259)
-    links = movelists[0].condition_parse(382)
-    print('')
+    print('XXXXXXXXXXXXXXXXXXXX\n\n\n\n')
+    links = movelists[0].condition_parse(275)
+
     for link in links:
         if link.is_button_press():
             print('{} -> {}'.format(link.button_press, link.move_id))
