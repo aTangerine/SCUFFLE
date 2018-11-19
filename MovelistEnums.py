@@ -34,13 +34,14 @@ class PaddedButton(Enum):
     Forward = 0x1008
     Forward_ALT = 0x3008
 
-
-
+    d = 0x9999
 
 class InputType(Enum):
     Press = 0x06
     Hold = 0x20
-    Direction = 0x13AE
+
+    Direction_PRESS = 0x13AF
+    Direction_HOLD = 0x13AE
     Direction_ALT = 0x0002
     No_SC_Press =0x8f #for when you're not in soul charge???
 

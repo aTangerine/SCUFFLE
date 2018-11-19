@@ -161,7 +161,7 @@ class Link:
         self.auto_cancel = self.parse_auto_cancel()
 
     def get_command_string(self):
-        if self.is_auto_cancel and not self.button_press:
+        if self.auto_cancel and not self.button_press:
             return '.'
         if self.hold:
             return '[{}]'.format(self.button_press.name)
@@ -180,6 +180,8 @@ class Link:
                             arg_2 = b2i(c, index + 4, big_endian=True)
                             if enum_has_value(PaddedButton, arg_2):
                                 return PaddedButton(arg_2)
+                    if arg_1 == InputType.Direction_PRESS.value or arg_1 == InputType.Direction_HOLD.value:
+                        return PaddedButton.d
                     if arg_1 == InputType.Hold.value:
                         if (int(c[index + 3]) == 0x8b):
                             arg_2 = b2i(c, index + 4, big_endian=True)
@@ -195,8 +197,10 @@ class Link:
             if len(self.conditions[0][1]) == 3: #this move auto cancels at a specific frame
                 if int(self.conditions[0][1][0]) == 0x89:
                     return True
-            if len(self.conditions[0][1]) == 6: #this move auto cancels during soul charge??
-                if int(self.conditions[0][1][0]) == 0x89 and int(self.conditions[0][1][3]) == 0x8b:
+            if len(self.conditions[0][1]) == 6:
+                if int(self.conditions[0][1][0]) == 0x89 and int(self.conditions[0][1][3]) == 0x8b:#this move auto cancels during soul charge??
+                    return True
+                if int(self.conditions[0][1][0]) == 0x89 and int(self.conditions[0][1][3]) == 0x89:#auto cancel window?????
                     return True
         elif len(self.conditions) == 0:
             return True
@@ -220,24 +224,46 @@ class Movelist:
 
     def __init__(self, raw_bytes, name):
         #self.name = name.replace('/', '')
-        self.name = name.split('/')[-1]
+        self.name = name.split('/')[-1].split('_')[0].capitalize()
 
         header_index_1x = 0xC
         header_index_1y = 0xE
         header_index_2 = 0x10 # to attacks info
         header_index_3 = 0x14 # very short byte block
         header_index_4 = 0x18 # cinematics info
+        header_unknown_1c = 0x1c
         header_unknown_1e = 0x1e
         header_unknown_20 = 0x20 #same as 0x1c in tira
+        header_unknown_22 = 0x22
         header_unknown_24 = 0x24 #??
+        header_unknown_26 = 0x26
         header_unknown_28 = 0x28
+        header_unknown_2a = 0x2A
         header_unknown_2C = 0x2C
 
         move_block_start = 0x30
         self.length = b2i(raw_bytes, header_index_1x) - 1
         self.id = b2i(raw_bytes, header_index_1y)
-        self.stance_offset = b2i(raw_bytes, header_unknown_1e) #this offset is used to help determine the location for non attack moves such as stances and nuetral, they are marked as 3200+
-        self.stance_offset += 0x70E #magic number
+        self.block_Q_start = b2i(raw_bytes, header_unknown_1c) #always zero???
+        self.block_Q_length = b2i(raw_bytes, header_unknown_1e) #this offset is used to help determine the location for non attack moves such as stances and nuetral, they are marked as 3200+
+
+        self.block_R_start = b2i(raw_bytes, header_unknown_20)  #always q length?
+        self.block_R_length = b2i(raw_bytes, header_unknown_22)
+
+        self.block_S_start = b2i(raw_bytes, header_unknown_24)
+        self.block_S_length = b2i(raw_bytes, header_unknown_26)
+
+        self.block_T_start = b2i(raw_bytes, header_unknown_28)
+        self.block_T_length = b2i(raw_bytes, header_unknown_2a)
+
+        self.stance_offset = self.block_T_start
+        #self.stance_offset = 0x949
+
+
+
+
+        #self.stance_offset += 0x70E #magic number
+        #self.stance_offset += 0x70C  # magic number
 
         attack_block_start = b4i(raw_bytes, header_index_2)
         short_block_start = b4i(raw_bytes, header_index_3)
@@ -450,6 +476,9 @@ class Movelist:
 
     def parse_neutral(self):
         cancels = sorted(self.all_cancels.values(), key=lambda x: x.bytes.count(b'\x19')) # incredibly hackish way to find neutral
+
+        print('{}: neutral id: {} offset: {} delta: {}'.format(self.name, cancels[-1].move_id, self.stance_offset, cancels[-1].move_id - self.stance_offset))
+
         move_ids_to_commands = {}
         for cancel in (cancels[-50:]):
 
@@ -628,6 +657,9 @@ class Movelist:
                         args = bytes[index - (3 * condition_arg_number): index]
                         conditions.append((condition_type, args))
 
+                    if inst == CC.EXE_19: #if we figure this out we can unify with parse_neutral, until then we throw this away
+                        conditions = []
+
                     if inst == CC.EXE_25: #add cancel
                         if len(conditions) > 0:
                             for type, args in conditions:
@@ -717,12 +749,13 @@ if __name__ == "__main__":
 
     counted_bytes = []
 
-    movelists = load_all_movelists()
+    #movelists = load_all_movelists()
     #movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
-    #movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
+    movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/mitsurugi_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/ivy_movelist.m0000')]
 
 
     '''for movelist in movelists:
@@ -739,8 +772,9 @@ if __name__ == "__main__":
     #links = movelists[0].condition_parse(259)
 
     for mvlist in movelists:
-        name =  mvlist.name.split('_')[0].capitalize()
-        print('{}: {}'.format(name, mvlist.stance_offset))
+        pass
+        #name =  mvlist.name.split('_')[0].capitalize()
+        #print('{}: {}'.format(name, mvlist.stance_offset))
         #print('{}: byte {} len {}/{}'.format(mvlist.name, mvlist.y, len(mvlist.all_moves), mvlist.length))
         #print('{} = 0x{:02x}'.format(mvlist.name.split('_')[0].capitalize(), mvlist.id))
 
@@ -751,24 +785,26 @@ if __name__ == "__main__":
 
 
     print('XXXXXXXXXXXXXXXXXXXX\n\n\n\n')
-    links = movelists[0].condition_parse(435)
+    links = movelists[0].condition_parse(423)
 
     for link in links:
-        print('{:04x}'.format(link.move_id))
-        '''if link.is_button_press():
+        #print('{:04x}'.format(link.move_id))
+        if link.is_button_press():
             if link.hold:
                 print('[{}] -> {}'.format(link.button_press.name, link.move_id))
             else:
                 print('{} -> {}'.format(link.button_press.name, link.move_id))
-        if link.is_auto_cancel:
-            print('auto -> {}'.format(link.move_id))'''
+        elif link.is_auto_cancel():
+            print('auto -> {}'.format(link.move_id))
+        else:
+            print('orphan -> {} [{}]'.format(link.move_id, link.conditions))
 
     '''unlisted_singles = []
     for movelist in movelists:
         for cancel in movelist.all_cancels.values():
             try:
                 unlisted_singles += Movelist.parse_neutral(cancel)
-            except Exception as e:
+            except Exception as e: 
                 print('ERROR: movelist {}'.format(movelist.name))
                 raise e
     print('\n'.join('SINGLE_{:02x} = 0x{:02x}'.format(x, x) for x in sorted(set([y[0] for y in unlisted_singles]))))'''
