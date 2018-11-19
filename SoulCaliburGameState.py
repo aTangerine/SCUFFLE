@@ -158,8 +158,8 @@ class SC6MovementBlock:
         #0xA0 mystery
 
     def __repr__(self):
-        repr = "movement: {} | short_timer: {} | float_timer: {} | animation_id: {} | move_counter: {}".format(
-            self.movement_type, self.short_timer, self.float_timer, self.movelist_id, self.move_counter
+        repr = "{} | {} | {} | {} | {}".format(
+            self.movelist_id, self.short_timer, self.float_timer, self.move_counter, self.movement_type
         )
         return repr
 
@@ -224,7 +224,7 @@ class SC6StartupBlock:
         self.guard_damage = GetValueFromDataBlock(data_block, 0xA8, is_short=True)
 
     def __repr__(self):
-        repr = "attack_type: {} | startup: {} | dam: {} | hit_stun: {} | counter_stun: {} | block_stun: {} | launch_hit: {} | launch_counter: {} | guard_damage: {}".format(
+        repr = "{} | {} | {} | {} | {} | {} | {} | {} | {}".format(
             self.attack_type, self.startup_frames, self.damage, self.hit_stun, self.counterhit_stun, self.block_stun, self.hit_launch, self.counter_launch, self.guard_damage
         )
 
@@ -242,7 +242,7 @@ class SC6GlobalBlock:
         self.is_currently_armoring = is_currently_armoring
 
     def __repr__(self):
-        repr = "attack_address: {} | total_uncanceled_frames: {} | frames_move_can_be_canceled_early: {} | TJ: {} | TC: {} | GI: {} | REV: {}".format(
+        repr = "{} | {} | {} |J:{} |C: {} | GI: {} | REV: {}".format(
             hex(self.last_attack_address), self.total_animation_frames, self.end_of_move_cancelable_frames, self.is_currently_jumping, self.is_currently_crouching, self.is_currently_guard_impacting, self.is_currently_armoring)
         return repr
 
@@ -263,7 +263,7 @@ class PlayerSnapshot:
         self.global_block = global_block
 
     def __repr__(self):
-        return "{} | {} | {} | {}".format(self.timer_block, self.startup_block, self.global_block, self.movement_block)
+        return "{} | {} | {} | {}".format(self.movement_block, self.timer_block, self.startup_block, self.global_block)
 
 
 class GameSnapshot:

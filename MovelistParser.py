@@ -219,19 +219,26 @@ class Movelist:
     THREE_BYTE_INSTRUCTIONS = [CC.START, CC.ARG_8A, CC.ARG_8B, CC.ARG_89, CC.EXE_19, CC.EXE_25, CC.EXE_A5, CC.EXE_13, CC.PEN_2A, CC.PEN_28, CC.PEN_29]
 
     def __init__(self, raw_bytes, name):
-        self.name = name.replace('/', '')
+        #self.name = name.replace('/', '')
+        self.name = name.split('/')[-1]
 
-        header_index_1 = 0xC
+        header_index_1x = 0xC
+        header_index_1y = 0xE
         header_index_2 = 0x10 # to attacks info
         header_index_3 = 0x14 # very short byte block
         header_index_4 = 0x18 # cinematics info
-        header_unknown_1c = 0x1c
+        header_unknown_1e = 0x1e
         header_unknown_20 = 0x20 #same as 0x1c in tira
         header_unknown_24 = 0x24 #??
         header_unknown_28 = 0x28
         header_unknown_2C = 0x2C
 
         move_block_start = 0x30
+        self.length = b2i(raw_bytes, header_index_1x) - 1
+        self.id = b2i(raw_bytes, header_index_1y)
+        self.stance_offset = b2i(raw_bytes, header_unknown_1e) #this offset is used to help determine the location for non attack moves such as stances and nuetral, they are marked as 3200+
+        self.stance_offset += 0x70E #magic number
+
         attack_block_start = b4i(raw_bytes, header_index_2)
         short_block_start = b4i(raw_bytes, header_index_3)
 
@@ -634,8 +641,15 @@ class Movelist:
                         for i, b in enumerate(args):
                             if b == 0x8b:
                                 state = b2i(args, i + 1, big_endian=True)
-                                if not state == 0x30CC: #soul charge marker, keep going
+                                if state == 0x30CC:  # soul charge marker, keep going
+                                    pass
+                                else:
+                                    if state > 0x3000:  # this is kinda an escape value for stances??? and neutral???
+                                        state -= 0x3000
+                                        #state += 0x0949  # hella magic number, is this anywhere in files somewhere?
+                                        state += self.stance_offset  # hella magic number, is this anywhere in files somewhere?
                                     break
+
                         links.append(Link(conditions, state))
                         #print('{} {} {}: ({})'.format(inst, int(bytes[index + 1]), int(bytes[index + 2]), state))
 
@@ -703,11 +717,12 @@ if __name__ == "__main__":
 
     counted_bytes = []
 
-    #movelists = load_all_movelists()
+    movelists = load_all_movelists()
     #movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
-    movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/mitsurugi_movelist.m0000')]
 
 
     '''for movelist in movelists:
@@ -722,14 +737,31 @@ if __name__ == "__main__":
     #movelists[0].pen_parse(257)
     #links = movelists[0].condition_parse(257)
     #links = movelists[0].condition_parse(259)
+
+    for mvlist in movelists:
+        name =  mvlist.name.split('_')[0].capitalize()
+        print('{}: {}'.format(name, mvlist.stance_offset))
+        #print('{}: byte {} len {}/{}'.format(mvlist.name, mvlist.y, len(mvlist.all_moves), mvlist.length))
+        #print('{} = 0x{:02x}'.format(mvlist.name.split('_')[0].capitalize(), mvlist.id))
+
+    print(sorted(movelists[0].move_ids_to_commands.keys()))
+
+    print(', '.join('{:02x}'.format(x) for x in sorted(movelists[0].move_ids_to_commands.keys())))
+    print(len(movelists[0].all_moves))
+
+
     print('XXXXXXXXXXXXXXXXXXXX\n\n\n\n')
-    links = movelists[0].condition_parse(275)
+    links = movelists[0].condition_parse(435)
 
     for link in links:
-        if link.is_button_press():
-            print('{} -> {}'.format(link.button_press, link.move_id))
+        print('{:04x}'.format(link.move_id))
+        '''if link.is_button_press():
+            if link.hold:
+                print('[{}] -> {}'.format(link.button_press.name, link.move_id))
+            else:
+                print('{} -> {}'.format(link.button_press.name, link.move_id))
         if link.is_auto_cancel:
-            print('auto -> {}'.format(link.move_id))
+            print('auto -> {}'.format(link.move_id))'''
 
     '''unlisted_singles = []
     for movelist in movelists:
