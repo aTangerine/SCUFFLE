@@ -48,6 +48,7 @@ def b4f (bytes, index : int):
 class Move:
     LENGTH = 0x48
     def __init__(self, bytes):
+        self.bytes = bytes
 
         self.animation = b4i(bytes, 0x00)
         self.unknown_04 = b4i(bytes, 0x04)
@@ -329,7 +330,6 @@ class Movelist:
             try:
                 end = self.all_moves[i + 1].cancel_address
             except:
-                print(len(raw_bytes))
                 end = ca + 0x1000 #really we should parse to the ending 02 instruction here
             cancel = Cancel(raw_bytes[ca: end], ca, i)
             self.all_cancels[ca] = cancel
@@ -530,11 +530,8 @@ class Movelist:
 
         cancels = [x for x in self.all_cancels.values() if x.type >= 8] #less hackish way to find neutral
 
-        print(cancels[-1].move_id)
         move_ids_to_commands = {}
-        for cancel in (cancels[-50:]):
-        #for cancel in (cancels[-1:]):
-
+        for cancel in cancels:
             #state machine variables
             args_expected = 0
             buf_89 = [-1, -1, -1, -1, -1]
@@ -765,6 +762,14 @@ class Movelist:
             print('making cancels for {}'.format(self.name))
             self.print_out_cancel_blocks(fw)
 
+    def print_move_id_details(self, move_id):
+        print(Movelist.bytes_as_string(self.all_moves[move_id].bytes))
+        print(Movelist.bytes_as_string(self.all_attacks[self.all_moves[move_id].attack_index].bytes))
+
+        links = self.condition_parse(move_id)
+        for link in links:
+            print(link)
+
     def print_out_cancel_blocks(self, fw):
         for cancel in sorted(self.all_cancels.values(), key=lambda x: len(x.bytes)):
             running_index = 0
@@ -815,11 +820,11 @@ if __name__ == "__main__":
 
 
 
-    counted_bytes = []
+
 
     #movelists = load_all_movelists()
-    movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
-    #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
+    movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/mitsurugi_movelist.m0000')]
@@ -829,67 +834,10 @@ if __name__ == "__main__":
 
     #for movelist in movelists:
 
-
-    #cancels = sorted(movelists[0].all_cancels.values(), key = lambda x: x.bytes.count(b'\x19'))
-    #hack_neutral = (cancels[-1]) #incredibly hackish way to find neutral
-    #print(movelists[0].parse_neutral())
-
-    #movelists[0].pen_parse(257)
-    #links = movelists[0].condition_parse(257)
-    #links = movelists[0].condition_parse(259)
-
-    for mvlist in movelists:
-        pass
-        #name =  mvlist.name.split('_')[0].capitalize()
-        #print('{}: {}'.format(name, mvlist.stance_offset))
-        #print('{}: byte {} len {}/{}'.format(mvlist.name, mvlist.y, len(mvlist.all_moves), mvlist.length))
-        #print('{} = 0x{:02x}'.format(mvlist.name.split('_')[0].capitalize(), mvlist.id))
-
-    #movelists[0].write_cancels()
-
-    print(sorted(movelists[0].move_ids_to_commands.keys()))
-
-    print(', '.join('{:02x}'.format(x) for x in sorted(movelists[0].move_ids_to_commands.keys())))
-    print(len(movelists[0].all_moves))
-
-    codes = []
-    for cancel in sorted(movelists[0].all_cancels.values(), key=lambda x : x.move_id):
-        codes.append(int(cancel.bytes[2]))
-        #if int(cancel.bytes[2]) != 00:
-            #print('{}: {}'.format(cancel.move_id, Movelist.bytes_as_string(cancel.bytes[:3])))
-    print(Counter(codes))
-
     print('XXXXXXXXXXXXXXXXXXXX\n\n\n\n')
+    movelists[0].print_move_id_details(292)
     #links = movelists[0].condition_parse(344)
-    links = movelists[0].condition_parse(418)
 
-    for link in links:
-        print(link)
-        #print('{:04x}'.format(link.move_id))
-        '''if link.is_button_press():
-            if link.hold:
-                print('[{}] -> {}  [{}]'.format(link.button_press.name, link.move_id, link.conditions))
-            else:
-                print('{} -> {}  [{}]'.format(link.button_press.name, link.move_id, link.conditions))
-        elif link.is_auto_cancel():
-            print('auto -> {}  [{}]'.format(link.move_id, link.conditions))
-        else:
-            print('orphan -> {} [{}]'.format(link.move_id, link.conditions))'''
 
-    '''unlisted_singles = []
-    for movelist in movelists:
-        for cancel in movelist.all_cancels.values():
-            try:
-                unlisted_singles += Movelist.parse_neutral(cancel)
-            except Exception as e: 
-                print('ERROR: movelist {}'.format(movelist.name))
-                raise e
-    print('\n'.join('SINGLE_{:02x} = 0x{:02x}'.format(x, x) for x in sorted(set([y[0] for y in unlisted_singles]))))'''
-
-    #for i in range(len(unlisted_singles) - 1):
-        #if unlisted_singles[i][1] == unlisted_singles[i + 1][1] + 1:
-            #print('potential inst:{:02x}'.format(unlisted_singles[i][0]))
-
-    print(sorted(Counter(counted_bytes)))
 
 
