@@ -292,8 +292,9 @@ if __name__ == "__main__":
                 old_state = new_state
                 print(new_state)
                 if myReader.p1_movelist != None:
+                    pass
                     #myReader.p1_movelist.print_cancel_bytes_by_move_id(new_state.p1.movement_block.movelist_id)
-                    print(myReader.p1_movelist.parse_move(new_state.p1.movement_block.movelist_id))
+                    #print(myReader.p1_movelist.parse_move(new_state.p1.movement_block.movelist_id))
                     #print(myReader.p1_movelist.get_command_by_move_id(new_state.p1.movement_block.movelist_id))
 
 

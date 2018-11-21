@@ -19,6 +19,9 @@ class Button(Enum):
 
 
 class PaddedButton(Enum):
+    UNK = 0xAAAA
+    RE = 0xAAAB
+
     A = 0x0001
     B = 0x0002
     K = 0x0004
@@ -27,6 +30,7 @@ class PaddedButton(Enum):
     B_K = 0x0600
     A_B = 0x0300
     A_G = 0x0900
+    B_G = 0x0a00
     K_G = 0x0C00
 
     A_B_K = 0x0700
@@ -35,6 +39,10 @@ class PaddedButton(Enum):
     Forward_ALT = 0x3008
 
     d = 0x9999
+
+    b = 0x002e
+    h = 0x001b
+    #c =
 
 class InputType(Enum):
     Press = 0x06
@@ -46,7 +54,7 @@ class InputType(Enum):
     No_SC_Press =0x8f #for when you're not in soul charge???
 
 
-    OnHit = 0x0B #counter hit uses the same code signature but are about 3x as long so the counterhit part must be in there somewhere
+    OnContact = 0x0B #counter hit uses the same code signature but are about 3x as long so the counterhit part must be in there somewhere
 
 
     #PressDown = 0x13af /0x13ae ??

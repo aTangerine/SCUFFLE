@@ -139,6 +139,10 @@ class Cancel:
     def __init__(self, bytes, address, move_id):
         self.address = address
         self.bytes = bytes
+        if len(self.bytes) >= 3:
+            self.type = int(self.bytes[2])
+        else:
+            self.type = -1
         self.move_id = move_id
 
 
@@ -147,9 +151,11 @@ class Cancel:
 
 
 class Link:
-    def __init__(self, conditions, move_id):
+    def __init__(self, conditions, args, move_id, type):
         self.conditions = conditions
+        self.args = args
         self.move_id = move_id
+        self.type = type
         self.hold = False
 
         #if self.move_id == 264:
@@ -160,12 +166,27 @@ class Link:
 
         self.auto_cancel = self.parse_auto_cancel()
 
+    def __repr__(self):
+        com = self.get_command_string()
+        pa = Movelist.bytes_as_string(self.args)
+        pp = ' ; '.join(['{} [{}]'.format(x[0], Movelist.bytes_as_string(x[1])) for x in self.conditions])
+        return '{} LINK: {} {} ({}) -> [{}]'.format(self.type, self.move_id, com, pa,  pp)
+
     def get_command_string(self):
         if self.auto_cancel and not self.button_press:
             return '.'
         if self.hold:
             return '[{}]'.format(self.button_press.name)
-        return self.button_press.name
+        if self.button_press == None:
+            return '?'
+        else:
+            return self.button_press.name
+
+    def get_weight(self):
+        if self.hold or self.is_button_press():
+            return 10
+        else:
+            return 1
 
     def parse_button(self):
         for type, c in self.conditions:
@@ -175,19 +196,35 @@ class Link:
                 b = int(c[index]) #we're looking for the pattern 8b 00 06 8b [button argument]
                 if b == 0x8b:
                     arg_1 = b2i(c, index + 1, big_endian=True)
-                    if arg_1 == InputType.Press.value or arg_1 == InputType.No_SC_Press.value:
-                        if (int(c[index + 3]) == 0x8b):
-                            arg_2 = b2i(c, index + 4, big_endian=True)
-                            if enum_has_value(PaddedButton, arg_2):
+                    if (int(c[index + 3]) == 0x8b):
+                        arg_2 = b2i(c, index + 4, big_endian=True)
+
+                        if arg_1 == InputType.Press.value or arg_1 == InputType.No_SC_Press.value:
+                                if enum_has_value(PaddedButton, arg_2):
+                                    return PaddedButton(arg_2)
+                        if arg_1 == InputType.Direction_PRESS.value or arg_1 == InputType.Direction_HOLD.value:
+                            return PaddedButton.d
+                        if arg_1 == InputType.OnContact.value:
+                            try:
                                 return PaddedButton(arg_2)
-                    if arg_1 == InputType.Direction_PRESS.value or arg_1 == InputType.Direction_HOLD.value:
-                        return PaddedButton.d
-                    if arg_1 == InputType.Hold.value:
-                        if (int(c[index + 3]) == 0x8b):
-                            arg_2 = b2i(c, index + 4, big_endian=True)
-                            if enum_has_value(PaddedButton, arg_2):
-                                self.hold = True
-                                return PaddedButton(arg_2)
+                            except Exception:
+                                return PaddedButton.UNK
+
+                        if arg_1 == InputType.Hold.value:
+                            if (int(c[index + 3]) == 0x8b):
+                                arg_2 = b2i(c, index + 4, big_endian=True)
+                                if enum_has_value(PaddedButton, arg_2):
+                                    self.hold = True
+                                    return PaddedButton(arg_2)
+
+                    if (int(c[index + 3]) == 0x8a): #8b 00 05 8a 00 f0 for RE release
+                        if arg_1 == 0x0005: #release?
+                            return PaddedButton.RE
+
+                if b == 0x8a:  # 8a 01 00 8b 7f ff for RE hold
+                    if (int(c[index + 3]) == 0x8b):
+                        return PaddedButton.RE
+
 
                 index += 3
         return None
@@ -197,6 +234,10 @@ class Link:
             if len(self.conditions[0][1]) == 3: #this move auto cancels at a specific frame
                 if int(self.conditions[0][1][0]) == 0x89:
                     return True
+                if int(self.conditions[0][1][0]) == 0x8b:
+                    if int(self.conditions[0][1][1]) == 0x74: #still in soul charge???
+                        return True
+                    return True #??? ?? 00 54 / 00 09
             if len(self.conditions[0][1]) == 6:
                 if int(self.conditions[0][1][0]) == 0x89 and int(self.conditions[0][1][3]) == 0x8b:#this move auto cancels during soul charge??
                     return True
@@ -256,7 +297,7 @@ class Movelist:
         self.block_T_start = b2i(raw_bytes, header_unknown_28)
         self.block_T_length = b2i(raw_bytes, header_unknown_2a)
 
-        self.stance_offset = self.block_T_start
+        #self.stance_offset = self.block_T_start
         #self.stance_offset = 0x949
 
 
@@ -283,9 +324,14 @@ class Movelist:
 
         self.all_cancels = {}
         self.move_ids_to_cancels = {}
-        for i in range(0, len(self.all_moves) - 1):
+        for i in range(0, len(self.all_moves)):
             ca = self.all_moves[i].cancel_address
-            cancel = Cancel(raw_bytes[ca: self.all_moves[i + 1].cancel_address], ca, i)
+            try:
+                end = self.all_moves[i + 1].cancel_address
+            except:
+                print(len(raw_bytes))
+                end = ca + 0x1000 #really we should parse to the ending 02 instruction here
+            cancel = Cancel(raw_bytes[ca: end], ca, i)
             self.all_cancels[ca] = cancel
             self.move_ids_to_cancels[i] = cancel
 
@@ -293,14 +339,19 @@ class Movelist:
 
         move_ids_to_check = list(self.move_ids_to_commands.keys())
 
+        self.nodes = []
+
         while len(move_ids_to_check) > 0:
             move_id = move_ids_to_check.pop(0)
             original_command = self.move_ids_to_commands[move_id]
             #ids_to_commands = self.parse_move(move_id)
             ids_to_commands = {}
             for link in self.condition_parse(move_id):
+                com = link.get_command_string().replace('_', '+')
+                weight = link.get_weight()
+                self.nodes.append((move_id, link.move_id, weight, com))
                 if link.is_button_press() or link.is_auto_cancel():
-                    ids_to_commands[link.move_id] = link.get_command_string().replace('_', '+')
+                    ids_to_commands[link.move_id] = com
 
             for cancelable_move_id in ids_to_commands:
                 if not cancelable_move_id in self.move_ids_to_commands.keys():
@@ -475,12 +526,14 @@ class Movelist:
 
 
     def parse_neutral(self):
-        cancels = sorted(self.all_cancels.values(), key=lambda x: x.bytes.count(b'\x19')) # incredibly hackish way to find neutral
+        #cancels = sorted(self.all_cancels.values(), key=lambda x: x.bytes.count(b'\x19')) # incredibly hackish way to find neutral
 
-        print('{}: neutral id: {} offset: {} delta: {}'.format(self.name, cancels[-1].move_id, self.stance_offset, cancels[-1].move_id - self.stance_offset))
+        cancels = [x for x in self.all_cancels.values() if x.type >= 8] #less hackish way to find neutral
 
+        print(cancels[-1].move_id)
         move_ids_to_commands = {}
         for cancel in (cancels[-50:]):
+        #for cancel in (cancels[-1:]):
 
             #state machine variables
             args_expected = 0
@@ -527,7 +580,7 @@ class Movelist:
                         if next_instruction == CC.ARG_8A:
                             if buf_8a[-1] == 0x0102 or buf_8a[-1] == 0x0101 or buf_8a[-1] == 0x0103: #input marker
                                 next_8b_is_input = True
-                            if buf_8a[-1] == 0x0103:
+                            if buf_8a[-1] == 0x0103 or buf_8a[-1] == 0x0104: #0x0104 only for tira gloomy???
                                 next_19_is_8way_move = True
                             if buf_8a[-1] == 0x003D:
                                 next_19_is_normal_move = True
@@ -632,13 +685,21 @@ class Movelist:
             conditions = []
             index = 0
             buf_8b = []
+            pos_to_conditions = {}
             while index < len(bytes):
                 inst = CC(int(bytes[index]))
                 if inst == CC.START:
                     index += 3
                 elif inst in (CC.PEN_2A, CC.PEN_28, CC.PEN_29):
-                    #arg = b2i(bytes, index + 1, big_endian=True)
-                    #pos = arg
+                    arg = b2i(bytes, index + 1, big_endian=True)
+                    if inst == CC.PEN_28:
+                        pos_to_conditions[arg] = list(conditions)
+
+                    if inst == CC.PEN_2A:
+                        if arg in pos_to_conditions.keys():
+                            conditions += pos_to_conditions[arg]
+
+
                     index += 3
                 elif inst in (CC.ARG_8B, CC.ARG_8A, CC.ARG_89):
                     if inst == CC.ARG_8B:
@@ -661,14 +722,9 @@ class Movelist:
                         conditions = []
 
                     if inst == CC.EXE_25: #add cancel
-                        if len(conditions) > 0:
-                            for type, args in conditions:
-                                pass
-                                #print('{} : {}'.format(type, Movelist.bytes_as_string(args)))
-
-                        condition_type = int(bytes[index + 1])
-                        condition_arg_number = int(bytes[index + 2])
-                        args = bytes[index - (3 * condition_arg_number): index]
+                        exe_type = int(bytes[index + 1])
+                        exe_arg_number = int(bytes[index + 2])
+                        args = bytes[index - (3 * exe_arg_number): index]
                         state = -1
                         for i, b in enumerate(args):
                             if b == 0x8b:
@@ -678,11 +734,13 @@ class Movelist:
                                 else:
                                     if state > 0x3000:  # this is kinda an escape value for stances??? and neutral???
                                         state -= 0x3000
-                                        #state += 0x0949  # hella magic number, is this anywhere in files somewhere?
-                                        state += self.stance_offset  # hella magic number, is this anywhere in files somewhere?
+                                        state += self.block_T_start
+                                    #elif state > 0x2000:
+                                        #state -= 0x2000
+                                        #state += self.block_S_start
                                     break
 
-                        links.append(Link(conditions, state))
+                        links.append(Link(conditions, args, state, exe_type))
                         #print('{} {} {}: ({})'.format(inst, int(bytes[index + 1]), int(bytes[index + 2]), state))
 
                         conditions = []
@@ -695,28 +753,20 @@ class Movelist:
 
             return links
 
+    def write_graph(self):
+        with open('graph.csv', 'w') as fw:
+            fw.write('Source;Target;Weight;Label\n')
+            for node in self.nodes:
+                if not '?' in node[3]:
+                    fw.write('{};{};{};{}\n'.format(node[0], node[1], node[2], node[3]))
 
+    def write_cancels(self):
+        with open('cancels/c_{}'.format(self.name), 'w') as fw:
+            print('making cancels for {}'.format(self.name))
+            self.print_out_cancel_blocks(fw)
 
-
-
-if __name__ == "__main__":
-    import os
-    def load_all_movelists():
-
-        directory = 'movelists/'
-
-        movelists = []
-        for filename in os.listdir(directory):
-            if filename.endswith('.m0000'):
-                localpath = '{}/{}'.format(directory, filename)
-                movelist = Movelist.from_file(localpath)
-                movelists.append(movelist)
-        return movelists
-
-    #input_file = 'tira_movelist.byte.m0000'
-
-    def print_out_cancel_blocks(movelist, fw):
-        for cancel in sorted(movelist.all_cancels.values(), key=lambda x: len(x.bytes)):
+    def print_out_cancel_blocks(self, fw):
+        for cancel in sorted(self.all_cancels.values(), key=lambda x: len(x.bytes)):
             running_index = 0
             check_for_end = False
             fw.write('#{}\n'.format(cancel.move_id))
@@ -742,6 +792,24 @@ if __name__ == "__main__":
                     index += 2
                 index += 1
 
+
+if __name__ == "__main__":
+    import os
+    def load_all_movelists():
+
+        directory = 'movelists/'
+
+        movelists = []
+        for filename in os.listdir(directory):
+            if filename.endswith('.m0000'):
+                localpath = '{}/{}'.format(directory, filename)
+                movelist = Movelist.from_file(localpath)
+                movelists.append(movelist)
+        return movelists
+
+    #input_file = 'tira_movelist.byte.m0000'
+
+
     #input_file = 'movelists/xianghua_movelist.byte.m0000' #these come from cheat engine, memory viewer -> memory regions -> (movelist address) . should be 0x150000 bytes
 
 
@@ -750,18 +818,17 @@ if __name__ == "__main__":
     counted_bytes = []
 
     #movelists = load_all_movelists()
-    #movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
+    movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
-    movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/mitsurugi_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/ivy_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/geralt_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/siegfried_movelist.m0000')]
 
+    #for movelist in movelists:
 
-    '''for movelist in movelists:
-        with open('cancels/c_{}'.format(movelist.name), 'w') as fw:
-            print('making cancels for {}'.format(movelist.name))
-            print_out_cancel_blocks(movelist, fw)'''
 
     #cancels = sorted(movelists[0].all_cancels.values(), key = lambda x: x.bytes.count(b'\x19'))
     #hack_neutral = (cancels[-1]) #incredibly hackish way to find neutral
@@ -778,26 +845,36 @@ if __name__ == "__main__":
         #print('{}: byte {} len {}/{}'.format(mvlist.name, mvlist.y, len(mvlist.all_moves), mvlist.length))
         #print('{} = 0x{:02x}'.format(mvlist.name.split('_')[0].capitalize(), mvlist.id))
 
+    #movelists[0].write_cancels()
+
     print(sorted(movelists[0].move_ids_to_commands.keys()))
 
     print(', '.join('{:02x}'.format(x) for x in sorted(movelists[0].move_ids_to_commands.keys())))
     print(len(movelists[0].all_moves))
 
+    codes = []
+    for cancel in sorted(movelists[0].all_cancels.values(), key=lambda x : x.move_id):
+        codes.append(int(cancel.bytes[2]))
+        #if int(cancel.bytes[2]) != 00:
+            #print('{}: {}'.format(cancel.move_id, Movelist.bytes_as_string(cancel.bytes[:3])))
+    print(Counter(codes))
 
     print('XXXXXXXXXXXXXXXXXXXX\n\n\n\n')
-    links = movelists[0].condition_parse(423)
+    #links = movelists[0].condition_parse(344)
+    links = movelists[0].condition_parse(418)
 
     for link in links:
+        print(link)
         #print('{:04x}'.format(link.move_id))
-        if link.is_button_press():
+        '''if link.is_button_press():
             if link.hold:
-                print('[{}] -> {}'.format(link.button_press.name, link.move_id))
+                print('[{}] -> {}  [{}]'.format(link.button_press.name, link.move_id, link.conditions))
             else:
-                print('{} -> {}'.format(link.button_press.name, link.move_id))
+                print('{} -> {}  [{}]'.format(link.button_press.name, link.move_id, link.conditions))
         elif link.is_auto_cancel():
-            print('auto -> {}'.format(link.move_id))
+            print('auto -> {}  [{}]'.format(link.move_id, link.conditions))
         else:
-            print('orphan -> {} [{}]'.format(link.move_id, link.conditions))
+            print('orphan -> {} [{}]'.format(link.move_id, link.conditions))'''
 
     '''unlisted_singles = []
     for movelist in movelists:
