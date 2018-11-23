@@ -12,7 +12,7 @@ from GUI_Overlay import CurrentColorScheme, ColorSchemeEnum
 
 
 class DataColumns(Enum):
-    XidX = 0
+    idX = 0
     XXCOMXX = 1
     impX = 2
     AT = 3
@@ -32,7 +32,7 @@ class DataColumns(Enum):
         return "DataColumns"
 
 DataColumnsToMenuNames = {
-    DataColumns.XidX : 'internal move id number',
+    DataColumns.idX : 'internal move id number',
     DataColumns.XXCOMXX : 'best guess for input command',
     DataColumns.impX : 'the startup frames before the move becomes active',
     DataColumns.AT : 'the type of attack (low/mid/high/throw/special)',

@@ -142,11 +142,15 @@ class HitLevel(Enum):
 
 
 class LaunchType(Enum):
+
     none = 0x0
     STN = 0x01
     LNC = 0x02
     KND = 0x03
     THROW = 0xAA
+
+
+
 
 
 
@@ -363,18 +367,19 @@ EXCEPTIONS = [HitEffect.hit_2e1.value, HitEffect.hit_30a.value, HitEffect.hit_33
 
 def HitEffectToLaunchType(he):
     if he == HitEffect.hit_3a3.value:
-        return LaunchType.THROW
+        return 'THROW'
+        #return LaunchType.THROW
 
     if he in EXCEPTIONS:
-        return LaunchType.none
+        return ''
     if he >= 0x2ba:
-        return LaunchType.STN
+        return LaunchType.STN.name
     if he >= 0x200:
-        return LaunchType.LNC #todo 0x116 might be a reverse exception here?
+        return LaunchType.LNC.name #todo 0x116 might be a reverse exception here?
     if he >= 0x180:
-        return LaunchType.KND
+        return LaunchType.KND.name
 
-    return LaunchType.none
+    return ''
 
 
 

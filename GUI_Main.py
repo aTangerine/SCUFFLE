@@ -59,6 +59,10 @@ class GUI_Main(Tk):
         self.tekken_bot_menu = Menu(self.menu)
         self.tekken_bot_menu.add_command(label="Restart", command=self.restart)
 
+        self.do_show_all_hitbox_data = BooleanVar()
+        self.do_show_all_hitbox_data.set(False)
+        self.tekken_bot_menu.add_checkbutton(label='Show frame data for all hitboxes (useful for moves with \'tip\' properties)', onvalue=True, offvalue=False, variable=self.do_show_all_hitbox_data)
+
         self.do_print_debug_values = BooleanVar()
         self.do_print_debug_values.set(False)
         self.tekken_bot_menu.add_checkbutton(label='DEBUG: Print Every Frame (WARNING: CPU USAGE HIGH)', onvalue=True, offvalue=False, variable=self.do_print_debug_values)
@@ -191,7 +195,7 @@ class GUI_Main(Tk):
 
     def update_launcher(self):
         time1 = time.time()
-        successful_update = self.launcher.Update(self.do_print_debug_values.get())
+        successful_update = self.launcher.Update(self.do_print_debug_values.get(), self.do_show_all_hitbox_data.get())
 
         if self.overlay != None:
             self.overlay.update_location()

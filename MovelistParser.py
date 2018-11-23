@@ -27,6 +27,7 @@ MOVELIST STRUCTURE
 import struct
 from collections import Counter
 from MovelistEnums import *
+import GameplayEnums
 
 def b4i (bytes, index : int):
     return struct.unpack('I', bytes[index: index + 4])[0]
@@ -37,13 +38,14 @@ def b2i (bytes, index : int , big_endian = False):
     else:
         return struct.unpack('>H', bytes[index: index + 2])[0]
 
-
-
 def b1i (bytes, index : int):
     return struct.unpack('B', bytes[index: index + 1])[0]
 
 def b4f (bytes, index : int):
     return struct.unpack('f', bytes[index: index + 4])[0]
+
+
+
 
 class Move:
     LENGTH = 0x48
@@ -59,8 +61,88 @@ class Move:
         self.unknown_multiplier = b4i(bytes, 0x30)
         self.total_frames = b2i(bytes, 0x34)
         self.cancel_address = b4i(bytes, 0x38)
+
+        self.attack_indexes = []
+        count = 0
+        while count < 6:
+            attack_index = b2i(bytes, 0x3C + 2 * count)
+            if attack_index == 0xFFFF:
+                break
+            else:
+                self.attack_indexes.append(attack_index)
+            count += 1
+
         self.attack_index = b2i(bytes, 0x3C)
         #last 12 bytes are fffffff?
+
+    def set_cancel(self, cancel):
+        self.cancel = cancel
+
+    def set_attacks(self, attacks):
+        self.attacks = attacks
+
+    def get_frame_data(self):
+        def pretty_advantage(f: int):
+            flipped = f * -1
+            if flipped >= 0:
+                return '+{}'.format(flipped)
+            else:
+                return '{}'.format(flipped)
+
+        data = []
+
+        cf = self.cancel.get_cancelable_frames()
+
+        for a in self.attacks:
+            startup = a.startup
+            t = self.total_frames - startup
+            recovery = t - cf
+
+            block_stun = a.block_stun
+            hit_stun = a.hit_stun
+            counter_stun = a.counter_stun
+
+
+            do_calculate_counter = (a.hit_effect != a.counter_effect) or (a.hit_stun != a.counter_stun)
+            if do_calculate_counter:
+                c = '{} {}'.format(a.counter_launch, pretty_advantage(recovery - counter_stun))
+            else:
+                c = ''
+            data.append((t, startup + 1, pretty_advantage(recovery - block_stun), '{} {}'.format(a.hit_launch, pretty_advantage(recovery - a.hit_stun)), c, a.damage))
+            #bhc = '{} {} {} {} {}'.format(startup, recovery - block_stun, a.hit_launch, recovery - hit_stun, c, a.active, a.damage)
+            #print(bhc)
+        return data
+
+    def get_gui_guide(self):
+        guide = [
+            (0x00, 0x04, b4i, "animation id"),
+            (0x04, 0x08, b4i, "???"),
+            (0x08, 0x0c, b4f, "weapon(?) motion(?) multiplier"),
+            (0x0c, 0x10, b4f, "animation speed multiplier"),
+
+            (0x10, 0x14, b4i, "???"),
+            (0x14, 0x16, b2i, "???"),
+            (0x16, 0x18, b2i, "???"),
+            (0x18, 0x1c, b4i, "???"),
+            (0x1c, 0x20, b4f, "???"),
+            (0x20, 0x24, b4i, "???"),
+            (0x24, 0x28, b4i, "???"),
+            (0x28, 0x2C, b4i, "???"),
+            (0x2C, 0x30, b4i, "???"),
+
+            (0x30, 0x34, b4f, "???"),
+            (0x34, 0x36, b2i, "total animation frames"),
+            (0x38, 0x3C, b4i, "address of cancel information"),
+
+            (0x3C, 0x3E, b2i, "hitbox 1 index"),
+            (0x3E, 0x40, b2i, "hitbox 2 index"),
+            (0x40, 0x42, b2i, "hitbox 3 index"),
+            (0x42, 0x44, b2i, "hitbox 4 index"),
+            (0x44, 0x46, b2i, "hitbox 5 index"),
+            (0x46, 0x48, b2i, "hitbox 6 index"),
+        ]
+        return self.bytes, guide
+
 
 
 
@@ -94,6 +176,7 @@ class Attack:
         self.active = b2i(self.bytes, 0x38) #usually 1 or 2 higher than startup, possible when active frames end?
         self.damage = b2i(self.bytes, 0x3A)
 
+
         self.block_stun = b2i(self.bytes, 0x44)
         self.hit_stun = b2i(self.bytes, 0x46)
         self.counter_stun = b2i(self.bytes, 0x48)
@@ -103,7 +186,10 @@ class Attack:
         self.c2 = b2i(self.bytes, 0x4E)
 
         self.hit_effect = b2i(self.bytes, 0x50) #this may be two sepearate 1 byte enums
+        self.hit_launch = GameplayEnums.HitEffectToLaunchType(self.hit_effect)
+
         self.counter_effect = b2i(self.bytes, 0x52)
+        self.counter_launch = GameplayEnums.HitEffectToLaunchType(self.counter_effect)
 
         self.mystery_54 = b1i(self.bytes, 0x54) #Counter({0: 172, 17: 74, 5: 23, 12: 8, 18: 8, 11: 7, 29: 6, 8: 3, 32: 2, 33: 2, 24: 2, 35: 1, 9: 1, 41: 1, 30: 1})
         self.mystery_55 = b1i(self.bytes, 0x55) #Always 4
@@ -132,7 +218,54 @@ class Attack:
 
 
 
+    def get_gui_guide(self):
+        guide = [
+            (0x00, 0x04, b4i, "active limbs"), #TODO: ADD hitbox parser
 
+            (0x04, 0x06, b2i, "???"),
+
+            (0x06, 0x0c, b4i, "???"),
+            (0x0c, 0x12, b4i, "???"),
+            (0x12, 0x18, b4i, "???"),
+            (0x18, 0x1e, b4i, "???"),
+            (0x1e, 0x24, b4i, "???"),
+
+            (0x24, 0x26, b2i, "???"),
+
+            (0x26, 0x32, b4i, "???"),
+
+            (0x32, 0x34, b2i, "???"),
+            (0x34, 0x36, b2i, "begin active frames (startup)"),
+            (0x36, 0x38, b2i, "end active frames"),
+            (0x38, 0x3A, b2i, "damage"),
+            (0x3A, 0x3C, b2i, "???"),
+
+            (0x3C, 0x44, b4i, "???"),
+            (0x44, 0x46, b2i, "frames of block stun"),
+            (0x46, 0x48, b2i, "frames of hit stun"),
+            (0x48, 0x4a, b2i, "frames of counterhit stun"),
+            (0x4a, 0x4c, b2i, "???"),
+            (0x4c, 0x4e, b2i, "???"),
+
+            (0x4e, 0x50, b2i, "???"),
+            (0x50, 0x52, b2i, "hit effect (type of launch/crouching recovery/etc.)"),
+            (0x52, 0x54, b2i, "counter effect"),
+            (0x54, 0x56, b2i, "block effect"),
+            (0x56, 0x58, b2i, "???"),
+            (0x58, 0x5a, b2i, "???"),
+            (0x5a, 0x5c, b2i, "???"),
+            (0x5c, 0x5e, b2i, "???"),
+            (0x5e, 0x60, b2i, "???"),
+
+            (0x60, 0x62, b2i, "???"),
+            (0x62, 0x64, b2i, "???"),
+            (0x64, 0x66, b2i, "???"),
+            (0x66, 0x68, b2i, "???"),
+
+            (0x68, 0x6c, b2i, "???"),
+            (0x6c, 0x70, b2i, "???"),
+        ]
+        return self.bytes, guide
 
 
 
@@ -147,8 +280,83 @@ class Cancel:
         self.move_id = move_id
 
 
-        #print(len(self.bytes))
-        #print(self.bytes[-4:])
+    def get_cancelable_frames(self): #the number of frames 'early' the move can be canceled
+        try:
+            right_split = self.bytes.split(b'\x8b\x30\x20')[1]
+            cancelable_frames = int(right_split[5]) #usually this is something like 89 00 c9 89 00 0a where we want the 0a
+        except:
+            print('Unable to find cancelable frames for move {}'.format(self.move_id))
+            cancelable_frames = 0
+
+        return cancelable_frames
+
+    def get_gui_guide(self):
+        guide = []
+
+        index = 0
+        list_of_bytes = []
+        #descriptions = []
+        current_bytes = b''
+
+        while index < len(self.bytes):
+            current_bytes += self.bytes[index: index + 1]
+
+            try:
+                inst = CC(int(self.bytes[index]))
+            except:
+                list_of_bytes.append((current_bytes, 'ERROR PARSING'))
+                break
+
+            if inst == CC.END:
+                list_of_bytes.append((current_bytes, 'END'))
+                break
+            elif inst in Movelist.THREE_BYTE_INSTRUCTIONS:
+                args_bytes = self.bytes[index + 1: index + 3]
+                current_bytes += args_bytes
+                args = b2i(args_bytes, 0, big_endian=True)
+                first_arg = int(args_bytes[0])
+                second_arg = int(args_bytes[0])
+                index += 3
+
+                if inst == CC.START:
+                    list_of_bytes.append((current_bytes, 'type {} cancel block'.format(args)))
+                    current_bytes = b''
+                if inst == CC.EXE_A5:
+                    list_of_bytes.append((current_bytes, 'type {} condition'.format(first_arg)))
+                    current_bytes = b''
+                if inst == CC.EXE_25:
+                    list_of_bytes.append((current_bytes, 'type {} state or move cancel'.format(first_arg)))
+                    current_bytes =  b''
+                if inst == CC.EXE_19:
+                    list_of_bytes.append((current_bytes, 'type {} neutral cancel(???)'.format(first_arg)))
+                    current_bytes = b''
+                if inst == CC.EXE_13:
+                    list_of_bytes.append((current_bytes, 'yoshimitsu only ???'.format(first_arg)))
+                    current_bytes = b''
+                if inst == CC.PEN_2A:
+                    list_of_bytes.append((current_bytes, 'PEN ?? load ?? {}'.format(args)))
+                    current_bytes = b''
+                if inst == CC.PEN_28:
+                    list_of_bytes.append((current_bytes, 'PEN ?? insert ?? {}'.format(args)))
+                    current_bytes = b''
+                if inst == CC.PEN_29:
+                    list_of_bytes.append((current_bytes, 'PEN ?? very rare ?? {}'.format(args)))
+                    current_bytes = b''
+
+            else:
+                list_of_bytes.append((current_bytes, 'SINGLE'))
+                current_bytes =  b''
+                index += 1
+
+
+        guide = []
+        for bytes, desc in list_of_bytes:
+            guide.append((Movelist.bytes_as_string(bytes), desc))
+        return guide
+
+
+
+
 
 
 class Link:
@@ -323,6 +531,14 @@ class Movelist:
             attack = Attack(attack_block_bytes[i: i + Attack.LENGTH])
             self.all_attacks.append(attack)
 
+        for move in self.all_moves:
+            attacks = []
+            for index in move.attack_indexes:
+                if index < len(self.all_attacks):
+                    attacks.append(self.all_attacks[index])
+            move.set_attacks(attacks)
+
+
         self.all_cancels = {}
         self.move_ids_to_cancels = {}
         for i in range(0, len(self.all_moves)):
@@ -334,9 +550,10 @@ class Movelist:
             cancel = Cancel(raw_bytes[ca: end], ca, i)
             self.all_cancels[ca] = cancel
             self.move_ids_to_cancels[i] = cancel
+            self.all_moves[i].set_cancel(cancel)
+
 
         self.move_ids_to_commands = self.parse_neutral()
-
         move_ids_to_check = list(self.move_ids_to_commands.keys())
 
         self.nodes = []
@@ -374,8 +591,9 @@ class Movelist:
     def print_cancel_bytes_by_move_id(self, move_id):
         if move_id < len(self.all_moves):
             print(move_id)
-            attack_index = self.all_moves[move_id].attack_index
-            if attack_index < len(self.all_attacks):
+
+            if len(self.all_moves[move_id].attack_indexes) > 0:
+                attack_index = self.all_moves[move_id].attack_indexes[0]
                 print(attack_index)
                 attack = self.all_attacks[attack_index]
                 Movelist.print_bytes(attack.bytes)
@@ -763,8 +981,12 @@ class Movelist:
             self.print_out_cancel_blocks(fw)
 
     def print_move_id_details(self, move_id):
-        print(Movelist.bytes_as_string(self.all_moves[move_id].bytes))
-        print(Movelist.bytes_as_string(self.all_attacks[self.all_moves[move_id].attack_index].bytes))
+        move = self.all_moves[move_id]
+        print(Movelist.bytes_as_string(move.bytes))
+        for index in move.attack_indexes:
+            print(Movelist.bytes_as_string(self.all_attacks[index].bytes))
+
+        move.get_frame_data()
 
         links = self.condition_parse(move_id)
         for link in links:
@@ -835,8 +1057,10 @@ if __name__ == "__main__":
     #for movelist in movelists:
 
     print('XXXXXXXXXXXXXXXXXXXX\n\n\n\n')
-    movelists[0].print_move_id_details(292)
-    #links = movelists[0].condition_parse(344)
+    #movelists[0].print_move_id_details(292)
+    #movelists[0].print_move_id_details(285)
+    movelists[0].print_move_id_details(262)
+
 
 
 
