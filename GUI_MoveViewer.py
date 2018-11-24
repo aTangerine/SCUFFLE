@@ -9,7 +9,7 @@ import MovelistParser
 class GUI_MoveViewer:
     def __init__(self, master):
         self.master = master
-        self.master.geometry(str(1920) + 'x' + str(720))
+        self.master.geometry(str(1920) + 'x' + str(1080))
         master.title("SCUFFLE Move Viewer")
 
         self.movelist_name_var = StringVar()
@@ -21,55 +21,52 @@ class GUI_MoveViewer:
 
         self.master.columnconfigure(0, weight=1)
 
-        self.scrollable_frame = Canvas(master)
-        self.scrollable_frame.grid(sticky=N+S+E+W, row = 0, column = 0)
+        self.main_window = self.create_window_in_scrollable_viewport(master)
 
-        #SCROLLING TOO HARD; CODE HULK NOT UNDERSTAND; CODE HULK SMASH TKINTER
-        #self.xscrlbr = Scrollbar(master, orient='horizontal')
-        #self.xscrlbr.grid(column=0, row=1, sticky='ew', columnspan=2)
-        #self.yscrlbr = Scrollbar(master)
-        #self.yscrlbr.grid(column=1, row=0, sticky='ns')
-
-        #self.scrollable_frame.configure(yscrollcommand=self.yscrlbr.set)
-        #self.scrollable_frame.configure(xscrollcommand=self.xscrlbr.set)
-        #self.xscrlbr.config(command = self.scrollable_frame.xview)
-        #self.yscrlbr.config(command=self.scrollable_frame.yview)
-        #self.scrollable_frame.configure(scrollregion=self.scrollable_frame.bbox("all"))
-
-        loader_frame = Frame(self.scrollable_frame)
-        loader_frame.grid(sticky=N+W)
-
+        loader_frame = Frame(self.main_window)
+        loader_frame.grid(sticky=N+W, row = 0, column=0)
 
         self.label = Label(loader_frame, textvariable=self.movelist_name_var)
         self.label.pack()
 
-        e = Entry(loader_frame)
-        e.pack()
 
-        e.delete(0, END)
-        e.insert(0, "0")
 
-        self.load_button = Button(loader_frame, text="Load", command=lambda: self.load_moveid(e.get()))
+        self.load_movelist_button = Button(loader_frame, text="Load Movelist", command=lambda: self.load_movelist_dialog())
+        self.load_movelist_button.pack()
+
+        #self.close_button = Button(loader_frame, text="Close", command=master.quit)
+        #self.close_button.pack()
+
+        display_frame = Frame(self.main_window)
+        display_frame.grid(sticky=S + E + W, row = 0, column = 1)
+
+        move_frame = Frame(display_frame)
+        move_frame.grid(sticky=N+ S + E + W, row = 0, column = 0)
+
+        move_id_entry_container = Frame(move_frame)
+        move_id_entry_container.grid(row=0, column=0)
+
+        move_id_entry = Entry(move_id_entry_container)
+        move_id_entry.bind('<Return>', lambda x: self.load_moveid(move_id_entry.get()))
+        move_id_entry.pack()
+
+        self.load_button = Button(move_id_entry_container, text="Load", command=lambda: self.load_moveid(move_id_entry.get()))
         self.load_button.pack()
 
-        self.load_button = Button(loader_frame, text="Load Movelist", command=lambda: self.load_movelist_dialog())
-        self.load_button.pack()
+        self.move_id_textvar = StringVar()
+        self.move_id_textvar.set('-')
+        self.move_id_label = Label(move_id_entry_container, textvariable=self.move_id_textvar)
+        self.move_id_label.pack()
 
-        self.close_button = Button(loader_frame, text="Close", command=master.quit)
-        self.close_button.pack()
+        self.move_raw = Text(move_frame, height=24, width=12)
+        self.move_raw .grid(sticky = N+W, row = 0, column = 1)
 
-        display_frame = Frame(self.scrollable_frame)
-        display_frame.grid(sticky=S + E + W)
-
-        self.move_raw = Text(display_frame, height=24, width=12)
-        self.move_raw .grid(sticky = N+W, row = 0, column = 0)
-
-        self.move_intr = Text(display_frame, wrap="none", height=24, width=32)
-        self.move_intr.grid(sticky=N+W, row=0, column=1)
+        self.move_intr = Text(move_frame, wrap="none", height=24, width=32)
+        self.move_intr.grid(sticky=N+W, row=0, column=2)
 
 
         hitbox_frame = Frame(display_frame)
-        hitbox_frame.grid(sticky=N+W, row = 0, column = 2)
+        hitbox_frame.grid(sticky=N+W, row = 1, column = 0)
 
         hitbox_frame_header = Frame(hitbox_frame)
         hitbox_frame_header.grid(sticky=N+W, row=0, column=0)
@@ -91,26 +88,21 @@ class GUI_MoveViewer:
         self.prev_hitbox_button.grid(sticky=N+W, row=0, column=0)
         self.hitbox_label.grid(sticky=N+W, row=0, column=1)
         self.next_hitbox_button.grid(sticky=N+W, row = 0, column=2)
-        self.hitbox_id_label.grid(sticky=N + W, row=0, column=3)
+        self.hitbox_id_label.grid(sticky=N + W, row=1, column=0, columnspan = 3)
 
 
-        self.hitboxes_raw = []
-        self.hitboxes_intr = []
 
-        for _ in range(1):
-            self.hitboxes_raw.append(Text(hitbox_frame, wrap='none', height=36, width=18))
-            self.hitboxes_intr.append(Text(hitbox_frame, wrap='none', height=36, width=32))
 
-        for i, text in enumerate(self.hitboxes_raw):
-            text.grid(sticky=W, row=1, column=i * 2)
+        self.hitbox_raw = Text(hitbox_frame, wrap='none', height=36, width=18)
+        self.hitbox_intr = Text(hitbox_frame, wrap='none', height=36, width=32)
 
-        for i, text in enumerate(self.hitboxes_intr):
-            text.grid(sticky=W, row=1, column=i * 2 + 1)
+        self.hitbox_raw.grid(sticky=W, row=0, column=1)
+        self.hitbox_intr.grid(sticky=W, row=0, column=2)
 
-        self.cancel_frame = Frame(display_frame)
+        self.cancel_frame = Frame(self.main_window)
         self.cancel_frame.grid(sticky=W+E+N+S, row = 0, column = 3)
 
-        self.cp = ScrolledTextPair(self.cancel_frame, wrap='none', height=36, width = 66)
+        self.cp = ScrolledTextPair(self.cancel_frame, wrap='none', height=60, width = 66)
         self.cp.grid(sticky=N+W, row = 0, column = 0)
 
         self.cancel_raw = self.cp.left
@@ -122,6 +114,26 @@ class GUI_MoveViewer:
 
         #self.cancel_raw.grid(sticky=W, row=0, column = 0)
         #self.cancel_intr.grid(sticky=W, row=0, column = 1)
+
+    def create_window_in_scrollable_viewport(self, master):
+        scrollable_frame = Canvas(master, width=1920, height=1080, scrollregion=(0, 0, 1920, 1080))
+        main_window = Frame(master)
+
+        xscrlbr = Scrollbar(master, orient='horizontal')
+        xscrlbr.grid(column=0, row=1, sticky='ew', columnspan=2)
+        yscrlbr = Scrollbar(master, orient='vertical')
+        yscrlbr.grid(column=1, row=0, sticky='ns')
+
+        xscrlbr.config(command=scrollable_frame.xview)
+        yscrlbr.config(command=scrollable_frame.yview)
+        scrollable_frame.configure(yscrollcommand=yscrlbr.set)
+        scrollable_frame.configure(xscrollcommand=xscrlbr.set)
+        scrollable_frame.config(width=1920, height=1080)
+
+        # self.scrollable_frame.configure(scrollregion=self.scrollable_frame.bbox("all"))
+        scrollable_frame.grid(sticky=N + S + E + W, row=0, column=0)
+        scrollable_frame.create_window((0, 0), window=main_window, anchor="nw")
+        return main_window
 
     def load_movelist(self, path):
         try:
@@ -151,6 +163,7 @@ class GUI_MoveViewer:
             return
 
         if id < len(self.movelist.all_moves):
+            self.move_id_textvar.set('move id: {}'.format(id))
             move = self.movelist.all_moves[id]
             bytes, guide = move.get_gui_guide()
 
@@ -192,17 +205,17 @@ class GUI_MoveViewer:
     def load_hitbox(self):
         i = self.hitbox_index
         if i < len(self.hitboxes_data):
-            self.hitboxes_raw[0].delete(1.0, END)
-            self.hitboxes_raw[0].insert(END, self.hitboxes_data[i][0])
+            self.hitbox_raw.delete(1.0, END)
+            self.hitbox_raw.insert(END, self.hitboxes_data[i][0])
 
-            self.hitboxes_intr[0].delete(1.0, END)
-            self.hitboxes_intr[0].insert(END, self.hitboxes_data[i][1])
+            self.hitbox_intr.delete(1.0, END)
+            self.hitbox_intr.insert(END, self.hitboxes_data[i][1])
         self.update_hitbox_var()
 
     def update_hitbox_var(self):
         self.hitbox_index_var.set('{}/{}'.format(self.hitbox_index + 1, len(self.hitboxes_data)))
         if len(self.hitboxes_data) > 0:
-            self.hitbox_id_var.set(str(self.hitboxes_data[self.hitbox_index][2]))
+            self.hitbox_id_var.set('attack index: {}'.format(self.hitboxes_data[self.hitbox_index][2]))
 
     def load_movelist_dialog(self):
         #Tk().withdraw()  # we don't want a full GUI, so keep the root window from appearing
@@ -229,6 +242,8 @@ class GUI_MoveViewer:
         for i in range(1, int(lastline)):
             text.tag_add(tag, "%s.0" % i, "%s.0" % (i + 1))
             tag = "even" if tag == "odd" else "odd"
+
+
 
 
 #https://stackoverflow.com/questions/32038701/python-tkinter-making-two-text-widgets-scrolling-synchronize
