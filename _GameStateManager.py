@@ -6,7 +6,7 @@ from typing import List
 class GameStateManager:
     def __init__(self):
         self.game_reader = SoulCaliburGameState.SC6GameReader()
-        self.last_move = 0
+        self.p1_move_id = 0
         self.p1_backfiller = FrameBackCounter(True)
         self.p2_backfiller = FrameBackCounter(False)
 
@@ -20,7 +20,8 @@ class GameStateManager:
                 if len(snapshots) > 4:
                     did_p1_attack_change = snapshots[-3].p1.global_block.last_attack_address != snapshots[-4].p1.global_block.last_attack_address # we build in a slight delay so we don't trample the middile of the update or slower computers
                     if (did_p1_attack_change):
-                        b, h, c, t, s = GameStateManager.FrameStringFromMovelist('p1', self.game_reader.snapshots[-1].p1)
+                        id, b, h, c, t, s = GameStateManager.FrameStringFromMovelist('p1', self.game_reader.snapshots[-1].p1)
+                        self.p1_move_id = id
                         self.p1_backfiller.reset(t, 4, snapshots)
                         for entry in s:
                             print(entry)
@@ -30,7 +31,7 @@ class GameStateManager:
 
                     did_p2_attack_change = snapshots[-1].p2.global_block.last_attack_address != snapshots[-2].p2.global_block.last_attack_address
                     if (did_p2_attack_change):
-                        b, h, c, t, s = GameStateManager.FrameStringFromMovelist('p2', self.game_reader.snapshots[-1].p2)
+                        id, b, h, c, t, s = GameStateManager.FrameStringFromMovelist('p2', self.game_reader.snapshots[-1].p2)
                         self.p2_backfiller.reset(t, 4, snapshots)
                         for entry in s:
                             print(entry)
@@ -69,7 +70,7 @@ class GameStateManager:
                 t,
             )
             strings.append(str)
-        return b, h, c, t, strings
+        return id, b, h, c, t, strings
 
     def FormatFrameString(p_str, p : SoulCaliburGameState.PlayerSnapshot):
         b, h, c, t = FrameAnalyzer.CalculateFrameAdvantage(p)

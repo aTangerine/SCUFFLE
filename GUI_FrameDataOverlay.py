@@ -206,7 +206,7 @@ class GUI_FrameDataOverlay(GUI_Overlay.Overlay):
 
         self.s = Style()
         self.s.theme_use('alt')
-        self.s.configure('.', background=self.background_color)
+        self.s.configure('Overlay.TFrame', background=self.background_color)
         #self.s.configure('.', foreground=CurrentColorScheme.dict[ColorSchemeEnum.advantage_text])
 
         Grid.columnconfigure(self.toplevel, 0, weight=0)
@@ -219,7 +219,7 @@ class GUI_FrameDataOverlay(GUI_Overlay.Overlay):
         Grid.rowconfigure(self.toplevel, 0, weight=1)
         Grid.rowconfigure(self.toplevel, 1, weight=0)
 
-        self.s.configure('TFrame', background=self.tranparency_color)
+        self.s.configure('Overlay.TFrame', background=self.tranparency_color)
         #self.fa_p1_var, fa_p1_label = self.create_frame_advantage_label(1)
         #self.fa_p2_var, fa_p2_label = self.create_frame_advantage_label(5)
 
@@ -248,7 +248,7 @@ class GUI_FrameDataOverlay(GUI_Overlay.Overlay):
         return booleans_for_columns
 
     def create_padding_frame(self, col):
-        padding = Frame(self.toplevel, width=10)
+        padding = Frame(self.toplevel, width=10, style='Overlay.TFrame')
         padding.grid(row=0, column=col, rowspan=2, sticky=N + S + W + E)
         return padding
 

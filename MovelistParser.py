@@ -234,11 +234,12 @@ class Attack:
 
             (0x26, 0x32, b4i, "???"),
 
-            (0x32, 0x34, b2i, "???"),
-            (0x34, 0x36, b2i, "begin active frames (startup)"),
-            (0x36, 0x38, b2i, "end active frames"),
-            (0x38, 0x3A, b2i, "damage"),
-            (0x3A, 0x3C, b2i, "???"),
+            (0x32, 0x33, b1i, "hit level (high/low/unblockable/etc.)"),
+            (0x33, 0x34, b1i, "???"),
+            (0x34, 0x36, b2i, "???"),
+            (0x36, 0x38, b2i, "begin active frames (startup)"),
+            (0x38, 0x3A, b2i, "end active frames"),
+            (0x3A, 0x3C, b2i, "damage"),
 
             (0x3C, 0x44, b4i, "???"),
             (0x44, 0x46, b2i, "frames of block stun"),
@@ -344,7 +345,7 @@ class Cancel:
                     current_bytes = b''
 
             else:
-                list_of_bytes.append((current_bytes, 'SINGLE'))
+                list_of_bytes.append((current_bytes, 'SINGLE {}'.format(inst.value)))
                 current_bytes =  b''
                 index += 1
 

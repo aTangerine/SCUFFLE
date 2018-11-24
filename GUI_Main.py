@@ -13,6 +13,7 @@ import time
 from enum import Enum
 import VersionChecker
 import webbrowser
+import GUI_MoveViewer
 
 class GUI_Main(Tk):
     def __init__(self):
@@ -58,6 +59,10 @@ class GUI_Main(Tk):
 
         self.tekken_bot_menu = Menu(self.menu)
         self.tekken_bot_menu.add_command(label="Restart", command=self.restart)
+
+
+        self.move_viewer = None
+        self.tekken_bot_menu.add_command(label="Launch Move Viewer", command=self.launch_move_viewer)
 
         self.do_show_all_hitbox_data = BooleanVar()
         self.do_show_all_hitbox_data.set(False)
@@ -107,6 +112,8 @@ class GUI_Main(Tk):
 
         self.geometry(str(920) + 'x' + str(720))
 
+
+        self.previous_working_pid = False
         self.update_launcher()
         #self.overlay.hide()
 
@@ -135,6 +142,17 @@ class GUI_Main(Tk):
 
     def write_to_error(self, string):
         self.stderr.write(string)
+
+    def launch_move_viewer(self):
+        try:
+            self.old_move_id = 0
+            if self.move_viewer != None:
+                self.move_viewer.master.destroy()
+                self.move_viewer = None
+            self.move_viewer = GUI_MoveViewer.GUI_MoveViewer(Toplevel(self))
+            self.move_viewer.set_movelist(self.launcher.game_reader.p1_movelist)
+        except Exception as e:
+            print(e)
 
     def add_checkbox(self, menu, lookup_key, display_string, default_value, button_command):
         var = BooleanVar()
@@ -197,6 +215,11 @@ class GUI_Main(Tk):
         time1 = time.time()
         successful_update = self.launcher.Update(self.do_print_debug_values.get(), self.do_show_all_hitbox_data.get())
 
+        if self.move_viewer != None:
+            if self.launcher.p1_move_id != self.old_move_id:
+                self.old_move_id = self.launcher.p1_move_id
+                self.move_viewer.load_moveid(self.launcher.p1_move_id)
+
         if self.overlay != None:
             self.overlay.update_location()
             if successful_update:
@@ -204,9 +227,16 @@ class GUI_Main(Tk):
         #self.graph.update_state()
         time2 = time.time()
         elapsed_time = 1000 * (time2 - time1)
+
         if self.launcher.game_reader.HasWorkingPID():
+            if not self.previous_working_pid:
+                if self.move_viewer != None:
+                    self.move_viewer.set_movelist(self.launcher.game_reader.p1_movelist)
+
+            self.previous_working_pid = True
             self.after(max(2, 8 - int(round(elapsed_time))), self.update_launcher)
         else:
+            self.previous_working_pid = False
             self.after(1000, self.update_launcher)
 
     def on_closing(self):

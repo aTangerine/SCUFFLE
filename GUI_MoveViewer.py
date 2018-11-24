@@ -1,5 +1,6 @@
 import os
 from tkinter import *
+from tkinter.ttk import *
 from tkinter.filedialog import askopenfilename
 import MovelistParser
 
@@ -41,7 +42,7 @@ class GUI_MoveViewer:
         display_frame.grid(sticky=S + E + W, row = 0, column = 1)
 
         move_frame = Frame(display_frame)
-        move_frame.grid(sticky=N+ S + E + W, row = 0, column = 0)
+        move_frame.grid(sticky=N+E , row = 0, column = 0)
 
         move_id_entry_container = Frame(move_frame)
         move_id_entry_container.grid(row=0, column=0)
@@ -66,7 +67,7 @@ class GUI_MoveViewer:
 
 
         hitbox_frame = Frame(display_frame)
-        hitbox_frame.grid(sticky=N+W, row = 1, column = 0)
+        hitbox_frame.grid(sticky=N+E, row = 1, column = 0)
 
         hitbox_frame_header = Frame(hitbox_frame)
         hitbox_frame_header.grid(sticky=N+W, row=0, column=0)
@@ -89,6 +90,8 @@ class GUI_MoveViewer:
         self.hitbox_label.grid(sticky=N+W, row=0, column=1)
         self.next_hitbox_button.grid(sticky=N+W, row = 0, column=2)
         self.hitbox_id_label.grid(sticky=N + W, row=1, column=0, columnspan = 3)
+
+        #self.hitbox_seperator = Seperator()
 
 
 
@@ -142,6 +145,10 @@ class GUI_MoveViewer:
         except Exception as e:
             print(e)
 
+    def set_movelist(self, movelist):
+        self.movelist = movelist
+        self.movelist_name_var.set(self.movelist.name)
+
 
     def next_hitbox_command(self):
         self.hitbox_index += 1
@@ -178,6 +185,8 @@ class GUI_MoveViewer:
             self.hitbox_index = 0
             self.hitboxes_data = []
 
+
+
             for i, attack in enumerate(move.attacks):
                 bytes, guide = attack.get_gui_guide()
                 raw, intr = self.apply_guide(bytes, guide)
@@ -204,7 +213,10 @@ class GUI_MoveViewer:
 
     def load_hitbox(self):
         i = self.hitbox_index
-        if i < len(self.hitboxes_data):
+        if len(self.hitboxes_data) == 0:
+            self.hitbox_raw.delete(1.0, END)
+            self.hitbox_intr.delete(1.0, END)
+        elif i < len(self.hitboxes_data):
             self.hitbox_raw.delete(1.0, END)
             self.hitbox_raw.insert(END, self.hitboxes_data[i][0])
 
