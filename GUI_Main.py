@@ -113,7 +113,7 @@ class GUI_Main(Tk):
         self.geometry(str(920) + 'x' + str(720))
 
 
-        self.previous_working_pid = False
+        self.previous_working_pid = 0
         self.update_launcher()
         #self.overlay.hide()
 
@@ -229,14 +229,17 @@ class GUI_Main(Tk):
         elapsed_time = 1000 * (time2 - time1)
 
         if self.launcher.game_reader.HasWorkingPID():
-            if not self.previous_working_pid:
+            if self.previous_working_pid == 10:
                 if self.move_viewer != None:
-                    self.move_viewer.set_movelist(self.launcher.game_reader.p1_movelist)
-
-            self.previous_working_pid = True
+                    movelist = self.launcher.game_reader.p1_movelist
+                    if movelist != None:
+                        self.move_viewer.set_movelist(movelist)
+                        self.previous_working_pid += 1
+            else:
+                self.previous_working_pid += 1
             self.after(max(2, 8 - int(round(elapsed_time))), self.update_launcher)
         else:
-            self.previous_working_pid = False
+            self.previous_working_pid = 0
             self.after(1000, self.update_launcher)
 
     def on_closing(self):

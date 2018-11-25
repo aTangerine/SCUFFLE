@@ -115,12 +115,12 @@ class HitLevel(Enum):
     high_6d = 0x6D #tira 4K
 
 
-    mid_4b = 0x4b #common
-    mid_24 = 0x24  # rising/launching mid? i think this is a substition value, doesn't give mid property when assigned in the editor to other moves
+    mid_4b = 0x4b #common #doesn't hit grounded (if a ground hitting move has this, check second hitbox?)
+    mid_24 = 0x24  # hits grounded
     mid_6f = 0x6f  # crouching mid?
 
-    low_37 = 0x37 #common
-    low_13 = 0x13 #crouching low?
+    low_37 = 0x37 #common #hits grounded
+    low_13 = 0x13 #crouching low? #doesn't hit grounded
 
     sm_5b = 0x5b
     sm_7f = 0x7F  # soul charge activation, also ivy backturned B+K

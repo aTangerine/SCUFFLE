@@ -2,6 +2,7 @@ import os
 from tkinter import *
 from tkinter.ttk import *
 from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import asksaveasfilename
 import MovelistParser
 
 
@@ -10,7 +11,7 @@ import MovelistParser
 class GUI_MoveViewer:
     def __init__(self, master):
         self.master = master
-        self.master.geometry(str(1920) + 'x' + str(1080))
+        self.master.geometry(str(1850) + 'x' + str(990))
         master.title("SCUFFLE Move Viewer")
 
         self.movelist_name_var = StringVar()
@@ -34,6 +35,9 @@ class GUI_MoveViewer:
 
         self.load_movelist_button = Button(loader_frame, text="Load Movelist", command=lambda: self.load_movelist_dialog())
         self.load_movelist_button.pack()
+
+        self.save_movelist_button = Button(loader_frame, text="Save Movelist", command=lambda: self.save_movelist_dialog())
+        self.save_movelist_button.pack()
 
         #self.close_button = Button(loader_frame, text="Close", command=master.quit)
         #self.close_button.pack()
@@ -82,7 +86,7 @@ class GUI_MoveViewer:
         self.hitbox_id_var.set('-1')
 
         self.next_hitbox_button = Button(hitbox_frame_header, text=">", command=lambda: self.next_hitbox_command())
-        self.prev_hitbox_button = Button(hitbox_frame_header, text="<", command=lambda: self.next_hitbox_command())
+        self.prev_hitbox_button = Button(hitbox_frame_header, text="<", command=lambda: self.prev_hitbox_command())
         self.hitbox_label = Label(hitbox_frame_header, textvariable = self.hitbox_index_var)
         self.hitbox_id_label = Label(hitbox_frame_header, textvariable=self.hitbox_id_var)
 
@@ -90,10 +94,6 @@ class GUI_MoveViewer:
         self.hitbox_label.grid(sticky=N+W, row=0, column=1)
         self.next_hitbox_button.grid(sticky=N+W, row = 0, column=2)
         self.hitbox_id_label.grid(sticky=N + W, row=1, column=0, columnspan = 3)
-
-        #self.hitbox_seperator = Seperator()
-
-
 
 
         self.hitbox_raw = Text(hitbox_frame, wrap='none', height=36, width=18)
@@ -111,6 +111,17 @@ class GUI_MoveViewer:
         self.cancel_raw = self.cp.left
         self.cancel_intr = self.cp.right
 
+        self.clipboard_hitbox_button = Button(hitbox_frame_header, text="Copy Hitbox to Clipboard", command=lambda:GUI_MoveViewer.copy_to_clipboard_and_strip(self.hitbox_raw.get('1.0', END)))
+        self.clipboard_hitbox_button.grid(sticky=N+W+E, row=2, column=0,columnspan=3)
+
+        self.clipboard_move_button = Button(move_id_entry_container, text="Copy Move to Clipboard", command=lambda: GUI_MoveViewer.copy_to_clipboard_and_strip(self.move_raw.get('1.0', END)))
+        self.clipboard_move_button.pack()
+
+        self.clipboard_cancel_button = Button(loader_frame, text="Copy Cancel to Clipboard", command=lambda: GUI_MoveViewer.copy_to_clipboard_and_strip(self.cancel_raw.get('1.0', END)))
+        self.clipboard_cancel_button.pack()
+
+
+
 
         #self.cancel_raw = Text(self.cancel_frame, wrap='none', height=36, width=90)
         #self.cancel_intr = Text(self.cancel_frame, wrap='none', height=36, width=36)
@@ -119,7 +130,7 @@ class GUI_MoveViewer:
         #self.cancel_intr.grid(sticky=W, row=0, column = 1)
 
     def create_window_in_scrollable_viewport(self, master):
-        scrollable_frame = Canvas(master, width=1920, height=1080, scrollregion=(0, 0, 1920, 1080))
+        scrollable_frame = Canvas(master, width=1850, height=990, scrollregion=(0, 0, 1850, 990))
         main_window = Frame(master)
 
         xscrlbr = Scrollbar(master, orient='horizontal')
@@ -131,7 +142,7 @@ class GUI_MoveViewer:
         yscrlbr.config(command=scrollable_frame.yview)
         scrollable_frame.configure(yscrollcommand=yscrlbr.set)
         scrollable_frame.configure(xscrollcommand=xscrlbr.set)
-        scrollable_frame.config(width=1920, height=1080)
+        scrollable_frame.config(width=1850, height=990)
 
         # self.scrollable_frame.configure(scrollregion=self.scrollable_frame.bbox("all"))
         scrollable_frame.grid(sticky=N + S + E + W, row=0, column=0)
@@ -148,6 +159,7 @@ class GUI_MoveViewer:
     def set_movelist(self, movelist):
         self.movelist = movelist
         self.movelist_name_var.set(self.movelist.name)
+
 
 
     def next_hitbox_command(self):
@@ -184,8 +196,6 @@ class GUI_MoveViewer:
 
             self.hitbox_index = 0
             self.hitboxes_data = []
-
-
 
             for i, attack in enumerate(move.attacks):
                 bytes, guide = attack.get_gui_guide()
@@ -235,6 +245,16 @@ class GUI_MoveViewer:
         filename = askopenfilename(initialdir = '{}/{}'.format(os.getcwd(), '/movelists'))  # show an "Open" dialog box and return the path to the selected file
         self.load_movelist(filename)
 
+    def save_movelist_dialog(self):
+        filename = asksaveasfilename(defaultextension=".sc6_movelist")
+        if filename == '':
+            return
+        else:
+            with open(filename, 'wb') as fw:
+                fw.write(self.movelist.bytes)
+
+
+
     def apply_guide(self, bytes, guide):
         raw = ''
         intr = ''
@@ -254,6 +274,13 @@ class GUI_MoveViewer:
         for i in range(1, int(lastline)):
             text.tag_add(tag, "%s.0" % i, "%s.0" % (i + 1))
             tag = "even" if tag == "odd" else "odd"
+
+    def copy_to_clipboard_and_strip(text):
+            clip = Tk()
+            clip.withdraw()
+            clip.clipboard_clear()
+            clip.clipboard_append(text.replace('\n', ''))
+            clip.destroy()
 
 
 

@@ -118,21 +118,22 @@ class Move:
             (0x00, 0x04, b4i, "animation id"),
             (0x04, 0x08, b4i, "???"),
             (0x08, 0x0c, b4f, "weapon(?) motion(?) multiplier"),
-            (0x0c, 0x10, b4f, "animation speed multiplier"),
+            (0x0c, 0x10, b4f, "animation speed multiplier (no change in total frames)"),
 
-            (0x10, 0x14, b4i, "???"),
+            (0x10, 0x14, b4i, "transition/blending animation"),
             (0x14, 0x16, b2i, "???"),
             (0x16, 0x18, b2i, "???"),
-            (0x18, 0x1c, b4i, "???"),
-            (0x1c, 0x20, b4f, "???"),
+            (0x18, 0x1c, b4f, "?float?transition?"),
+            (0x1c, 0x20, b4f, "?float?transition?"),
             (0x20, 0x24, b4i, "???"),
             (0x24, 0x28, b4i, "???"),
             (0x28, 0x2C, b4i, "???"),
             (0x2C, 0x30, b4i, "???"),
 
-            (0x30, 0x34, b4f, "???"),
+            (0x30, 0x34, b4f, "move speed multiplier (multiplies total frames)"),
             (0x34, 0x36, b2i, "total animation frames"),
-            (0x38, 0x3C, b4i, "address of cancel information"),
+            (0x36, 0x38, b2i, "???"),
+            (0x38, 0x3C, lambda x, y: '{:04x}'.format(b4i(x, y)), "address of cancel information"),
 
             (0x3C, 0x3E, b2i, "hitbox 1 index"),
             (0x3E, 0x40, b2i, "hitbox 2 index"),
@@ -220,19 +221,20 @@ class Attack:
 
     def get_gui_guide(self):
         guide = [
-            (0x00, 0x04, b4i, "active limbs"), #TODO: ADD hitbox parser
+            (0x00, 0x02, b2i, "???"),
+            (0x02, 0x04, b2i, "???"),
 
             (0x04, 0x06, b2i, "???"),
 
-            (0x06, 0x0c, b4i, "???"),
-            (0x0c, 0x12, b4i, "???"),
-            (0x12, 0x18, b4i, "???"),
-            (0x18, 0x1e, b4i, "???"),
-            (0x1e, 0x24, b4i, "???"),
+            (0x06, 0x0c, b4i, "physics on hit (pushback)"),
+            (0x0c, 0x12, b4i, "physics on hit (launch distance)"),
+            (0x12, 0x18, b4i, "physics on counter (pushback?)"),
+            (0x18, 0x1e, b4i, "physics on counter (launch?)"),
+            (0x1e, 0x24, b4i, "physics on airborne"),
+            (0x24, 0x2a, b4i, "physics on block "),
+            (0x2a, 0x30, b4i, "physics on grounded"),
 
-            (0x24, 0x26, b2i, "???"),
-
-            (0x26, 0x32, b4i, "???"),
+            (0x30, 0x32, b2i, "???"),
 
             (0x32, 0x33, b1i, "hit level (high/low/unblockable/etc.)"),
             (0x33, 0x34, b1i, "???"),
@@ -241,7 +243,8 @@ class Attack:
             (0x38, 0x3A, b2i, "end active frames"),
             (0x3A, 0x3C, b2i, "damage"),
 
-            (0x3C, 0x44, b4i, "???"),
+            (0x3C, 0x40, b4i, "???"),
+            (0x40, 0x44, b4i, "hit spark type (contributes to guard damage)"),
             (0x44, 0x46, b2i, "frames of block stun"),
             (0x46, 0x48, b2i, "frames of hit stun"),
             (0x48, 0x4a, b2i, "frames of counterhit stun"),
@@ -254,15 +257,16 @@ class Attack:
             (0x54, 0x56, b2i, "block effect"),
             (0x56, 0x58, b2i, "???"),
             (0x58, 0x5a, b2i, "???"),
-            (0x5a, 0x5c, b2i, "???"),
+            (0x5a, 0x5c, b2i, "guard damage override (otherwise uses hit spark size and type calc)"),
             (0x5c, 0x5e, b2i, "???"),
             (0x5e, 0x60, b2i, "???"),
 
             (0x60, 0x62, b2i, "???"),
-            (0x62, 0x64, b2i, "???"),
-            (0x64, 0x66, b2i, "???"),
-            (0x66, 0x68, b2i, "???"),
 
+            (0x62, 0x64, b2i, "hit spark size (contributes to guard damage)"),
+            (0x64, 0x66, b2i, "???"),
+
+            (0x66, 0x68, b2i, "???"),
             (0x68, 0x6c, b2i, "???"),
             (0x6c, 0x70, b2i, "???"),
         ]
@@ -271,7 +275,8 @@ class Attack:
 
 
 class Cancel:
-    def __init__(self, bytes, address, move_id):
+    def __init__(self, movelist, bytes, address, move_id):
+        self.movelist = movelist
         self.address = address
         self.bytes = bytes
         if len(self.bytes) >= 3:
@@ -305,54 +310,84 @@ class Cancel:
             try:
                 inst = CC(int(self.bytes[index]))
             except:
-                list_of_bytes.append((current_bytes, 'ERROR PARSING'))
+                list_of_bytes.append((current_bytes, 'ERROR PARSING', index))
                 break
 
             if inst == CC.END:
-                list_of_bytes.append((current_bytes, 'END'))
+                list_of_bytes.append((current_bytes, 'END', index))
                 break
             elif inst in Movelist.THREE_BYTE_INSTRUCTIONS:
                 args_bytes = self.bytes[index + 1: index + 3]
                 current_bytes += args_bytes
                 args = b2i(args_bytes, 0, big_endian=True)
                 first_arg = int(args_bytes[0])
-                second_arg = int(args_bytes[0])
+                second_arg = int(args_bytes[1])
                 index += 3
 
                 if inst == CC.START:
-                    list_of_bytes.append((current_bytes, 'type {} cancel block'.format(args)))
+                    list_of_bytes.append((current_bytes, 'START (type {})'.format(args), index))
                     current_bytes = b''
                 if inst == CC.EXE_A5:
-                    list_of_bytes.append((current_bytes, 'type {} condition'.format(first_arg)))
+                    list_of_bytes.append((current_bytes, 'SET A5 (condition {})'.format(first_arg), index))
                     current_bytes = b''
                 if inst == CC.EXE_25:
-                    list_of_bytes.append((current_bytes, 'type {} state or move cancel'.format(first_arg)))
+                    try:
+                        state_index = (index - 3) - (second_arg * 3)
+                        state = b2i(self.bytes, state_index + 1, big_endian=True)
+                        if state < 0x1000: # 0-1000
+                            alias = state
+                        elif state < 0x2000: #1000-2000
+                            alias = state - 0x1000 + self.movelist.block_R_start
+                        elif state < 0x3000: #2000-3000
+                            alias = state - 0x2000 + self.movelist.block_S_start
+                        else: #3000-???
+                            alias = state - 0x3000 + self.movelist.block_T_start
+
+                        state_args = Movelist.bytes_as_string(self.bytes[state_index + 3: index - 3])
+                        state = '{}[id:{}]'.format(state, alias)
+
+
+
+                    except:
+                        state = 'ERROR'
+                        state_args = 'ERROR'
+
+
+                    if first_arg == 0x07:
+                        list_of_bytes.append((current_bytes, 'CHANGE {} ({})'.format(state, state_args), index))
+                    elif first_arg == 0x0d:
+                        list_of_bytes.append((current_bytes, 'CALL {} ({})'.format(state, state_args), index))
+                    else:
+                        list_of_bytes.append((current_bytes, 'STATE {} ?? ({}) '.format(state, state_args), index))
                     current_bytes =  b''
                 if inst == CC.EXE_19:
-                    list_of_bytes.append((current_bytes, 'type {} neutral cancel(???)'.format(first_arg)))
+                    list_of_bytes.append((current_bytes, 'type {} neutral cancel(???)'.format(first_arg), index))
                     current_bytes = b''
                 if inst == CC.EXE_13:
-                    list_of_bytes.append((current_bytes, 'yoshimitsu only ???'.format(first_arg)))
+                    list_of_bytes.append((current_bytes, 'yoshimitsu only ???'.format(first_arg), index))
                     current_bytes = b''
                 if inst == CC.PEN_2A:
-                    list_of_bytes.append((current_bytes, 'PEN ?? load ?? {}'.format(args)))
+                    list_of_bytes.append((current_bytes, 'IF 25->TRUE GOTO: {:04x}'.format(args), index))
                     current_bytes = b''
                 if inst == CC.PEN_28:
-                    list_of_bytes.append((current_bytes, 'PEN ?? insert ?? {}'.format(args)))
+                    list_of_bytes.append((current_bytes, 'IF a5->TRUE GOTO: {:04x}'.format(args), index))
                     current_bytes = b''
                 if inst == CC.PEN_29:
-                    list_of_bytes.append((current_bytes, 'PEN ?? very rare ?? {}'.format(args)))
+                    list_of_bytes.append((current_bytes, 'IF ??? GOTO{:04x}'.format(args), index))
                     current_bytes = b''
 
             else:
-                list_of_bytes.append((current_bytes, 'SINGLE {}'.format(inst.value)))
-                current_bytes =  b''
                 index += 1
+                list_of_bytes.append((current_bytes, 'SINGLE {}'.format(inst.value), index))
+                current_bytes =  b''
+
 
 
         guide = []
-        for bytes, desc in list_of_bytes:
-            guide.append((Movelist.bytes_as_string(bytes), desc))
+        last_i = 0
+        for bytes, desc, i in list_of_bytes:
+            guide.append((Movelist.bytes_as_string(bytes), '{:04x}: {}'.format(last_i, desc)))
+            last_i = i
         return guide
 
 
@@ -474,7 +509,7 @@ class Movelist:
     THREE_BYTE_INSTRUCTIONS = [CC.START, CC.ARG_8A, CC.ARG_8B, CC.ARG_89, CC.EXE_19, CC.EXE_25, CC.EXE_A5, CC.EXE_13, CC.PEN_2A, CC.PEN_28, CC.PEN_29]
 
     def __init__(self, raw_bytes, name):
-        #self.name = name.replace('/', '')
+        self.bytes = raw_bytes
         self.name = name.split('/')[-1].split('_')[0].capitalize()
 
         header_index_1x = 0xC
@@ -548,7 +583,7 @@ class Movelist:
                 end = self.all_moves[i + 1].cancel_address
             except:
                 end = ca + 0x1000 #really we should parse to the ending 02 instruction here
-            cancel = Cancel(raw_bytes[ca: end], ca, i)
+            cancel = Cancel(self, raw_bytes[ca: end], ca, i)
             self.all_cancels[ca] = cancel
             self.move_ids_to_cancels[i] = cancel
             self.all_moves[i].set_cancel(cancel)
