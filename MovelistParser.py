@@ -224,17 +224,17 @@ class Attack:
             (0x00, 0x02, b2i, "???"),
             (0x02, 0x04, b2i, "???"),
 
-            (0x04, 0x06, b2i, "???"),
+            (0x04, 0x08, b2i, "???"),
 
-            (0x06, 0x0c, b4i, "physics on hit (pushback)"),
-            (0x0c, 0x12, b4i, "physics on hit (launch distance)"),
-            (0x12, 0x18, b4i, "physics on counter (pushback?)"),
-            (0x18, 0x1e, b4i, "physics on counter (launch?)"),
-            (0x1e, 0x24, b4i, "physics on airborne"),
-            (0x24, 0x2a, b4i, "physics on block "),
-            (0x2a, 0x30, b4i, "physics on grounded"),
+            (0x08, 0x0e, b2i, "physics on hit (pushback)"),
+            (0x0e, 0x14, b2i, "physics on hit (launch distance)"),
+            (0x14, 0x1a, b2i, "physics on counter (pushback?)"),
+            (0x1a, 0x20, b2i, "physics on counter (launch?)"),
+            (0x20, 0x26, b2i, "physics on airborne"),
+            (0x26, 0x2c, b2i, "physics on block "),
+            (0x2c, 0x32, b2i, "physics on grounded"),
 
-            (0x30, 0x32, b2i, "???"),
+
 
             (0x32, 0x33, b1i, "hit level (high/low/unblockable/etc.)"),
             (0x33, 0x34, b1i, "???"),

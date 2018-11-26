@@ -216,7 +216,7 @@ class GUI_Main(Tk):
         successful_update = self.launcher.Update(self.do_print_debug_values.get(), self.do_show_all_hitbox_data.get())
 
         if self.move_viewer != None:
-            if self.launcher.p1_move_id != self.old_move_id:
+            if self.launcher.p1_move_id != self.old_move_id and self.launcher.p1_move_id != 0x59: #0x59 is the hex for 'coming to a stop' move_id
                 self.old_move_id = self.launcher.p1_move_id
                 self.move_viewer.load_moveid(self.launcher.p1_move_id)
 

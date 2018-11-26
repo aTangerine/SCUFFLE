@@ -96,16 +96,22 @@ class GUI_MoveViewer:
         self.hitbox_id_label.grid(sticky=N + W, row=1, column=0, columnspan = 3)
 
 
-        self.hitbox_raw = Text(hitbox_frame, wrap='none', height=36, width=18)
-        self.hitbox_intr = Text(hitbox_frame, wrap='none', height=36, width=32)
+        #self.hitbox_raw = Text(hitbox_frame, wrap='none', height=36, width=18)
+        #self.hitbox_intr = Text(hitbox_frame, wrap='none', height=36, width=32)
+        #self.hitbox_raw.grid(sticky=W, row=0, column=1)
+        #self.hitbox_intr.grid(sticky=W, row=0, column=2)
 
-        self.hitbox_raw.grid(sticky=W, row=0, column=1)
-        self.hitbox_intr.grid(sticky=W, row=0, column=2)
+        self.hitbox_pair = ScrolledTextPair(hitbox_frame, (18, 32), 36, True)
+        self.hitbox_pair.grid(sticky=W, row=0, column=1)
+        self.hitbox_raw = self.hitbox_pair.left
+        self.hitbox_intr = self.hitbox_pair.right
+
+
 
         self.cancel_frame = Frame(self.main_window)
         self.cancel_frame.grid(sticky=W+E+N+S, row = 0, column = 3)
 
-        self.cp = ScrolledTextPair(self.cancel_frame, wrap='none', height=60, width = 66)
+        self.cp = ScrolledTextPair(self.cancel_frame,  (70, 50), 60)
         self.cp.grid(sticky=N+W, row = 0, column = 0)
 
         self.cancel_raw = self.cp.left
@@ -289,20 +295,18 @@ class GUI_MoveViewer:
 class ScrolledTextPair(Frame):
     '''Two Text widgets and a Scrollbar in a Frame'''
 
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, width_lr, h, hide_scrollbar=False):
         Frame.__init__(self, master) # no need for super
 
-        # Different default width
-        if 'width' not in kwargs:
-            kwargs['width'] = 30
 
         # Creating the widgets
-        self.left = Text(self, **kwargs)
+        self.left = Text(self, width = width_lr[0], wrap='none', height=h)
         self.left.pack(side=LEFT, fill=BOTH, expand=True)
-        self.right = Text(self, **kwargs)
-        self.right.pack(side=LEFT, fill=BOTH, expand=True)
+        self.right = Text(self, width = width_lr[1], wrap='none', height=h)
+        self.right.pack(side=LEFT,  fill=BOTH, expand=True)
         self.scrollbar = Scrollbar(self)
-        self.scrollbar.pack(side=RIGHT, fill=Y)
+        if not hide_scrollbar:
+            self.scrollbar.pack(side=RIGHT, fill=Y)
 
         #Styling
         self.left.tag_configure("even", background="#f0f0f0")

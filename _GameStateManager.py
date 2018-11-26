@@ -18,10 +18,11 @@ class GameStateManager:
                 self.p1_backfiller.update(snapshots)
                 self.p2_backfiller.update(snapshots)
                 if len(snapshots) > 4:
+                    self.p1_move_id = snapshots[-1].p1.movement_block.movelist_id
                     did_p1_attack_change = snapshots[-3].p1.global_block.last_attack_address != snapshots[-4].p1.global_block.last_attack_address # we build in a slight delay so we don't trample the middile of the update or slower computers
                     if (did_p1_attack_change):
                         id, b, h, c, t, s = GameStateManager.FrameStringFromMovelist('p1', self.game_reader.snapshots[-1].p1)
-                        self.p1_move_id = id
+                        #self.p1_move_id = id
                         self.p1_backfiller.reset(t, 4, snapshots)
                         for entry in s:
                             print(entry)
