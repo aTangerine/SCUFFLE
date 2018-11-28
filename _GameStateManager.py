@@ -9,6 +9,8 @@ class GameStateManager:
         self.p1_move_id = 0
         self.p1_backfiller = FrameBackCounter(True)
         self.p2_backfiller = FrameBackCounter(False)
+        self.move_ids_record = [[], []]
+        self.bhc_stuns_record = [[], []]
 
     def Update(self, do_print_debug_vars, show_all_hitboxes):
         successful_update = self.game_reader.UpdateCurrentSnapshot()
@@ -19,63 +21,118 @@ class GameStateManager:
                 self.p2_backfiller.update(snapshots)
                 if len(snapshots) > 4:
                     self.p1_move_id = snapshots[-1].p1.movement_block.movelist_id
-                    did_p1_attack_change = snapshots[-3].p1.global_block.last_attack_address != snapshots[-4].p1.global_block.last_attack_address # we build in a slight delay so we don't trample the middile of the update or slower computers
-                    if (did_p1_attack_change):
-                        id, b, h, c, t, s = GameStateManager.FrameStringFromMovelist('p1', self.game_reader.snapshots[-1].p1)
-                        #self.p1_move_id = id
-                        self.p1_backfiller.reset(t, 4, snapshots)
-                        for entry in s:
-                            print(entry)
-                            if not show_all_hitboxes:
-                                break
+                    did_p1_attack_change = snapshots[-2].p1.movement_block.movelist_id != snapshots[-3].p1.movement_block.movelist_id
+                    if did_p1_attack_change:
+                        t, s = self.create_frame_entry('p1', snapshots[-1].p1, self.move_ids_record[0], self.bhc_stuns_record[0], self.game_reader.p1_movelist)
+                        if t != None:
+                            self.p1_backfiller.reset(t, 4, snapshots)
+                        if s != None:
+                            for entry in s:
+                                print(entry)
+                                if not show_all_hitboxes:
+                                    break
 
 
-                    did_p2_attack_change = snapshots[-1].p2.global_block.last_attack_address != snapshots[-2].p2.global_block.last_attack_address
-                    if (did_p2_attack_change):
-                        id, b, h, c, t, s = GameStateManager.FrameStringFromMovelist('p2', self.game_reader.snapshots[-1].p2)
-                        self.p2_backfiller.reset(t, 4, snapshots)
-                        for entry in s:
-                            print(entry)
-                            if not show_all_hitboxes:
-                                break
+                    #did_p2_attack_change = snapshots[-1].p2.global_block.last_attack_address != snapshots[-2].p2.global_block.last_attack_address
+                    did_p2_attack_change = snapshots[-2].p2.movement_block.movelist_id != snapshots[-3].p2.movement_block.movelist_id
+                    if did_p2_attack_change:
+                        t, s = self.create_frame_entry('p2', snapshots[-1].p2, self.move_ids_record[1],self.bhc_stuns_record[1], self.game_reader.p2_movelist)
+                        if t != None:
+                            self.p2_backfiller.reset(t, 4, snapshots)
+                        if s != None:
+                            for entry in s:
+                                print(entry)
+                                if not show_all_hitboxes:
+                                    break
+
 
                 if do_print_debug_vars:
                     print(self.game_reader.snapshots[-1])
             except Exception as e:
                 print(e)
+                raise e
 
-
-
-    def FrameStringFromMovelist(p_str, p : SoulCaliburGameState.PlayerSnapshot):
-
+    def create_frame_entry(self, name, p, record, bhc_stuns, movelist):
         id = p.movement_block.movelist_id
-        if id >= len(p.movelist.all_moves):
-            return [0, 0, 0, 0, '']
-        strings = []
+        record.append(id)
+        bhc_stuns.append((0, 0, 0))
+        #if id != 0x59 and id <= movelist.block_Q_length:  # 0x59 is the 'coming to a stop' move_id from 8 way run and above q_length are 'imaginary' moves
+        if (id > 0x0100 and id <= movelist.block_Q_length) or id == 212: #212 is soul charge, the only interesting move below 0x0100
+                id, b, h, c, t, rec, s = GameStateManager.FrameStringFromMovelist(name, p, movelist, record, bhc_stuns)
+                bhc_stuns[-1] = ((-1 * (b - rec), -1 * (h - rec), -1 * (c - rec)))
+                return t, s
+        if len(record) > 10:
+            record.pop(0)
+            bhc_stuns.pop(0)
+        return None, None
 
-        for frame_data in p.movelist.all_moves[id].get_frame_data():
-            t, s, b, h, c, d = frame_data
+    def FrameStringFromMovelist(p_str, p : SoulCaliburGameState.PlayerSnapshot, movelist, move_ids, stuns):
 
-            str = "FDO:{}:{:^3}|{:^7}|{:^4}|{:^4}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|".format(
+        def pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act):
+            if cl == hl and c == h:
+                cl = ''
+                c = ''
+            else:
+                c = FrameAnalyzer.StringifyAdvantage(c)
+
+            str = "FDO:{}:{:^3}|{:^7}|{:^4}|{:^2}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|".format(
                 p_str,
                 id,
                 p.movelist.get_command_by_move_id(id)[-7:],
                 s,
-                p.startup_block.attack_type,
-                b,
-                h,
-                c,
+                at,
+                '{}'.format(FrameAnalyzer.StringifyAdvantage(b)),
+                '{} {}'.format(hl, FrameAnalyzer.StringifyAdvantage(h)),
+                '{} {}'.format(cl, c),
                 d,
                 p.startup_block.guard_damage,
-                p.startup_block.end_of_active_frames - p.startup_block.startup_frames,
+                act,
                 t,
             )
             strings.append(str)
-        return id, b, h, c, t, strings
+
+        def no_hitbox_data():
+            t, s, b, hl, h, cl, c, d, at, act, rec = (0, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 0)
+            #s = p.movelist.all_moves[id].get_no_hitbox_startup()
+            if move_ids[-1] >= 0 and move_ids[-1] < len(p.movelist.all_moves):
+                #weight = p.movelist.all_moves[previous_move_id[-1]].get_weight_to_move_id(id)
+                weight, b, h, c = FrameAnalyzer.CalculateCarriedAdvantage(movelist, move_ids, stuns)
+
+                b -= weight
+                h -= weight
+                c -= weight
+
+                b *= -1
+                h *= -1
+                c *= -1
+
+            pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act)
+            return id, b, h, c, t, rec, strings
+
+
+
+        id = p.movement_block.movelist_id
+        move = p.movelist.all_moves[id]
+        strings = []
+
+        if id >= len(p.movelist.all_moves):
+            return no_hitbox_data()
+
+        else:
+            frame_datas = move.get_frame_data()
+            if len(frame_datas) == 0:
+                return no_hitbox_data()
+            else:
+                for frame_data in frame_datas:
+                    t, s, b, hl, h, cl, c, d, at, act, rec = frame_data
+                    pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act)
+                return id, b, h, c, t, rec, strings
+
+
 
     def FormatFrameString(p_str, p : SoulCaliburGameState.PlayerSnapshot):
         b, h, c, t = FrameAnalyzer.CalculateFrameAdvantage(p)
-        str = "FDO:{}:{:^4}|{:^7}|{:^4}|{:^4}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|".format(
+        str = "FDO:{}:{:^4}|{:^7}|{:^4}|{:^2}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|".format(
                                                         p_str,
                                                         p.movement_block.movelist_id,
                                                         p.movelist.get_command_by_move_id(p.movement_block.movelist_id)[-7:],
@@ -90,8 +147,7 @@ class GameStateManager:
                                                         t,
                                                       )
 
-        return b, h, c, t, str
-
+        return p.movement_block.movelist_id, b, h, c, t, [str]
 
 class FrameAnalyzer:
     def CalculateFrameAdvantage(p : SoulCaliburGameState.PlayerSnapshot):
@@ -124,16 +180,46 @@ class FrameAnalyzer:
         return b, h, c, total_frames
         #return b, h, c, cancelable
 
-    def FrameAdvantageByMoveId(p : SoulCaliburGameState.PlayerSnapshot):
-        move_id = p.movement_block.movelist_id
-
-
     def StringifyAdvantage(f : int):
         flipped = f * -1
         if flipped >= 0:
             return '+{}'.format(flipped)
         else:
             return '{}'.format(flipped)
+
+    def CalculateCarriedAdvantage(movelist, move_ids, stuns):
+        weights = []
+        for i, move_id in enumerate(move_ids):
+            if move_id < len(movelist.all_moves) and move_id >= 0:
+                if i < len(move_ids) - 1:
+                    weight = movelist.all_moves[move_id].get_weight_to_move_id(move_ids[i + 1])
+                    weights.append(weight)
+                else:
+                    weight = movelist.all_moves[move_id].get_no_hitbox_startup()
+                    weights.append(weight)
+            else:
+                weights.append(None)
+
+        current_balance = 0
+        current_stun = ((0, 0, 0))
+
+        for i in range(1, len(weights)):
+            weight = weights[-i]
+            stun = stuns[-i]
+            if weight != None:
+                #print(weight)
+                current_balance += weight
+            else:
+                break
+            if stun != (0, 0, 0):
+                current_stun = stun
+                break
+
+        return (current_balance, ) + current_stun
+
+
+
+
 
 class FrameBackCounter:
     def __init__(self, is_p1):
@@ -197,5 +283,5 @@ class FrameBackCounter:
 if __name__ == "__main__":
     launcher = GameStateManager()
     while(True):
-        launcher.Update()
+        launcher.Update(False, False)
         time.sleep(.05)

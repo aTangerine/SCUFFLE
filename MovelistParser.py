@@ -44,7 +44,21 @@ def b1i (bytes, index : int):
 def b4f (bytes, index : int):
     return struct.unpack('f', bytes[index: index + 4])[0]
 
+def encode_move_id(move_id):
+    pass
 
+def decode_move_id(encoded_move_id, movelist):
+    move_id = encoded_move_id
+    if move_id > 0x3000:  # this is kinda an escape value for stances??? and neutral???
+        move_id -= 0x3000
+        move_id += movelist.block_T_start
+    elif move_id > 0x2000:
+        move_id -= 0x2000
+        move_id += movelist.block_S_start
+    elif move_id > 0x1000:
+        move_id -= 0x1000
+        move_id += movelist.block_R_start
+    return move_id
 
 
 class Move:
@@ -81,6 +95,28 @@ class Move:
     def set_attacks(self, attacks):
         self.attacks = attacks
 
+    def get_weight_to_move_id(self, move_id):
+        link = self.cancel.get_link_to_move_id(move_id)
+        if link == None:
+            return None
+        else:
+            cancel_weight = link.weight
+            if len(self.attacks) > 0:
+                startup = self.attacks[0].startup
+            else:
+                startup = 0
+            if link.leave_on > startup:
+                cancel_weight -= startup
+            return cancel_weight
+
+
+
+
+    def get_no_hitbox_startup(self):
+        carried_block_adv = 0
+        startup = self.cancel.get_fastest_exit(self.total_frames)
+        return startup
+
     def get_frame_data(self):
         def pretty_advantage(f: int):
             flipped = f * -1
@@ -105,12 +141,24 @@ class Move:
 
             do_calculate_counter = (a.hit_effect != a.counter_effect) or (a.hit_stun != a.counter_stun)
             if do_calculate_counter:
-                c = '{} {}'.format(a.counter_launch, pretty_advantage(recovery - counter_stun))
+                cl = a.counter_launch
+                c = recovery - counter_stun
             else:
-                c = ''
-            data.append((t, startup + 1, pretty_advantage(recovery - block_stun), '{} {}'.format(a.hit_launch, pretty_advantage(recovery - a.hit_stun)), c, a.damage))
+                cl = a.counter_launch
+                c = recovery - counter_stun
+
             #bhc = '{} {} {} {} {}'.format(startup, recovery - block_stun, a.hit_launch, recovery - hit_stun, c, a.active, a.damage)
             #print(bhc)
+
+            attack_type = a.hit_level
+            try:
+                attack_type = GameplayEnums.HitLevel(attack_type).name
+            except Exception as e:
+                pass
+
+            active_frames = a.active - a.startup + 1
+
+            data.append((t, startup + 1, recovery - block_stun, a.hit_launch, recovery - a.hit_stun, cl, c, a.damage, attack_type, active_frames, recovery))
         return data
 
     def get_gui_guide(self):
@@ -156,13 +204,7 @@ class Attack:
         self.hitbox = b2i(self.bytes, 0) #hitbox limb?? 40 40 = right leg? 80 80 = left leg ??
         self.mystery_02 = b2i(self.bytes, 2) #Counter({128: 125, 0: 43, 17: 21, 2560: 18, 1: 14, 6144: 11, 2048: 10, 512: 10, 2: 9, 6784: 8, 51: 8, 4096: 6, 162: 4, 4608: 4, 34: 4, 513: 4, 640: 3, 641: 3, 3: 2, 129: 2, 3072: 1, 2099: 1})
 
-        self.mystery_08 = b2i(self.bytes, 0x08) #Counter({0: 51, 10: 45, 40: 29, 20: 24, 100: 23, 80: 21, 30: 16, 60: 12, 85: 11, 50: 10, 110: 8, 120: 8, 70: 7, 90: 7, 140: 6, 160: 5, 125: 4, 75: 3, 150: 3, 95: 3, 45: 3, 65: 2, 130: 2, 5: 2, 142: 2, 155: 2, 15: 1, 175: 1})
-        #there's 4, possibly 5 repeating-ish similar byte series here, poossibly corresponding to hitboxes? hurtboxes?
-        #moving an ec ff (tira's 5k) over one byte on accident resulted in a 'pop' up on hit
-
-        #0x0E controls launch height on hit
-        #0x14 controls counter launch height on hit
-
+        self.mystery_08 = b2i(self.bytes, 0x08) # these next 5 turned out to be physics for hit/hit launch/counter/counter launch/aerial/blocking/and grounded
         self.mystery_20 = b2i(self.bytes, 0x20) #5a, b4 ???
 
         self.mystery_24 = b2i(self.bytes, 0x24) #b0 ff, 48??
@@ -171,7 +213,8 @@ class Attack:
 
         self.mystery_2A = b2i(self.bytes, 0x2A) #14 # 00 #46
 
-        self.hit_level = b2i(self.bytes, 0x32)
+        self.hit_level = b1i(self.bytes, 0x32)
+        #0x33?
         self.strange_guard = b2i(self.bytes, 0x34) #this number is 0, 1, 2, 4, 8, or 16 (for tira). Changing it can change if it can cause guard crushes as well as influence the guard damage
         self.startup = b2i(self.bytes, 0x36)
         self.active = b2i(self.bytes, 0x38) #usually 1 or 2 higher than startup, possible when active frames end?
@@ -284,6 +327,35 @@ class Cancel:
         else:
             self.type = -1
         self.move_id = move_id
+        self.links = Movelist.links_from_bytes(self.bytes, self.movelist)
+
+    def get_link_to_move_id(self, move_id):
+        for link in self.links:
+            if link.move_id == move_id:
+                return link
+        return None
+
+    def get_fastest_exit(self, total_frames):
+        exit = total_frames - self.get_cancelable_frames()
+        for link in self.links:
+            if link.is_to_attack_or_stance(self.movelist):
+                if link.leave_on < exit:
+                    exit = link.leave_on
+        return exit
+
+    def has_at_least_one_button_press(self):
+        for link in self.links:
+            if link.is_button_press():
+                return True
+        return False
+
+    def get_last_call_address_index(bytes): #hypothesis: this is the GOTO address for when the move reaches it's totoal frames (maybe?) usually the last 0-3 lines
+        try:
+            split = bytes.split(b'\x8b\x00\x09\xa5\x01\x01\x96\x28')[1]
+            final_address_index = b2i(split, 0, big_endian=True)
+            return final_address_index
+        except:
+            return len(bytes) - 1
 
 
     def get_cancelable_frames(self): #the number of frames 'early' the move can be canceled
@@ -334,17 +406,21 @@ class Cancel:
                     try:
                         state_index = (index - 3) - (second_arg * 3)
                         state = b2i(self.bytes, state_index + 1, big_endian=True)
-                        if state < 0x1000: # 0-1000
-                            alias = state
-                        elif state < 0x2000: #1000-2000
-                            alias = state - 0x1000 + self.movelist.block_R_start
-                        elif state < 0x3000: #2000-3000
-                            alias = state - 0x2000 + self.movelist.block_S_start
-                        else: #3000-???
-                            alias = state - 0x3000 + self.movelist.block_T_start
+                        is_soul_charge = False
+                        if state == 0x30CC: #soul charge
+                            is_soul_charge = True
+                            state_index = state_index + 3
+                            state = b2i(self.bytes, state_index + 1, big_endian=True)
+
+
+                        alias = decode_move_id(state, self.movelist)
 
                         state_args = Movelist.bytes_as_string(self.bytes[state_index + 3: index - 3])
-                        state = '{}[id:{}]'.format(state, alias)
+                        if is_soul_charge:
+                            tag = '<sc>'
+                        else:
+                            tag = '<b>'
+                        state = '{}[id:{}{}{}]'.format(state, tag, alias, tag)
 
 
 
@@ -378,7 +454,7 @@ class Cancel:
 
             else:
                 index += 1
-                list_of_bytes.append((current_bytes, 'SINGLE {}'.format(inst.value), index))
+                list_of_bytes.append((current_bytes, 'RETURN ({})'.format(inst.value), index))
                 current_bytes =  b''
 
 
@@ -396,17 +472,18 @@ class Cancel:
 
 
 class Link:
-    def __init__(self, conditions, args, move_id, type):
+    def __init__(self, conditions, args, move_id, encoded_move_id, type, sc_only, is_last_call):
         self.conditions = conditions
         self.args = args
         self.move_id = move_id
+        self.encoded_move_id = encoded_move_id
         self.type = type
+        self.sc_only = sc_only
+        self.is_last_call = is_last_call
         self.hold = False
 
-        #if self.move_id == 264:
-        #print(self.move_id)
-        #print(self.conditions)
-        #print("----------")
+        self.parse_edge()
+
         self.button_press = self.parse_button()
 
         self.auto_cancel = self.parse_auto_cancel()
@@ -415,7 +492,45 @@ class Link:
         com = self.get_command_string()
         pa = Movelist.bytes_as_string(self.args)
         pp = ' ; '.join(['{} [{}]'.format(x[0], Movelist.bytes_as_string(x[1])) for x in self.conditions])
-        return '{} LINK: {} {} ({}) -> [{}]'.format(self.type, self.move_id, com, pa,  pp)
+        return '{} LINK: {} {} out {} in {} ({}) -> [{}]'.format(self.type, self.move_id, com, self.leave_on, self.enter_in, pa,  pp)
+
+    def parse_edge(self):
+        args_split = []
+        for i in range(0, len(self.args), 3):
+            if self.args[i] == 0x89:
+                args_split.append(b2i(self.args, i + 1, big_endian=True))
+
+        if len(args_split) == 0:
+            leave_on = 0
+            enter_in = 0
+
+        if len(args_split) == 1:
+            leave_on = args_split[0]
+            enter_in = 0
+
+
+        if len(args_split) >= 2:
+            leave_on = args_split[1]
+            enter_in = args_split[0]
+
+        self.leave_on = leave_on
+        self.enter_in = enter_in
+        self.weight = self.leave_on - self.enter_in
+
+    def is_to_attack_or_stance(self, movelist):
+        #attacks exist between 256 and the end of the first block in the movelist (block Q)
+        #stances exist in the fourth block (block T) and seem to always start with 0x32 (so 0x3200+ could be a stance?)
+        if not self.is_last_call:
+            if self.move_id < len(movelist.all_moves):
+                if self.move_id > 0x0100 and self.move_id < movelist.block_Q_length and self.sc_only == False:
+                    return True
+                if self.encoded_move_id >= 0x3200 and self.encoded_move_id < 0x3216:
+
+                    if movelist.all_moves[self.move_id].cancel.has_at_least_one_button_press():
+                        return True
+        return False
+
+
 
     def get_command_string(self):
         if self.auto_cancel and not self.button_press:
@@ -542,14 +657,7 @@ class Movelist:
         self.block_T_start = b2i(raw_bytes, header_unknown_28)
         self.block_T_length = b2i(raw_bytes, header_unknown_2a)
 
-        #self.stance_offset = self.block_T_start
-        #self.stance_offset = 0x949
-
-
-
-
-        #self.stance_offset += 0x70E #magic number
-        #self.stance_offset += 0x70C  # magic number
+        #print('Q: {}+{} R: {}+{} S: {}+{} T: {}+{}'.format(self.block_Q_start, self.block_Q_length, self.block_R_start, self.block_R_length, self.block_S_start, self.block_S_length, self.block_T_start, self.block_T_length))
 
         attack_block_start = b4i(raw_bytes, header_index_2)
         short_block_start = b4i(raw_bytes, header_index_3)
@@ -582,7 +690,7 @@ class Movelist:
             try:
                 end = self.all_moves[i + 1].cancel_address
             except:
-                end = ca + 0x1000 #really we should parse to the ending 02 instruction here
+                end = ca + 0x2000 #really we should parse to the ending 02 instruction here #wow there are some very long cancel blocks
             cancel = Cancel(self, raw_bytes[ca: end], ca, i)
             self.all_cancels[ca] = cancel
             self.move_ids_to_cancels[i] = cancel
@@ -591,6 +699,8 @@ class Movelist:
 
         self.move_ids_to_commands = self.parse_neutral()
         move_ids_to_check = list(self.move_ids_to_commands.keys())
+        #print(sorted(self.move_ids_to_commands.keys()))
+
 
         self.nodes = []
 
@@ -599,12 +709,13 @@ class Movelist:
             original_command = self.move_ids_to_commands[move_id]
             #ids_to_commands = self.parse_move(move_id)
             ids_to_commands = {}
-            for link in self.condition_parse(move_id):
-                com = link.get_command_string().replace('_', '+')
-                weight = link.get_weight()
-                self.nodes.append((move_id, link.move_id, weight, com))
-                if link.is_button_press() or link.is_auto_cancel():
-                    ids_to_commands[link.move_id] = com
+            if move_id < len(self.all_moves) and move_id >= 0:
+                for link in self.move_ids_to_cancels[move_id].links:
+                    com = link.get_command_string().replace('_', '+')
+                    weight = link.get_weight()
+                    self.nodes.append((move_id, link.move_id, weight, com))
+                    if link.is_button_press() or link.is_auto_cancel():
+                        ids_to_commands[link.move_id] = com
 
             for cancelable_move_id in ids_to_commands:
                 if not cancelable_move_id in self.move_ids_to_commands.keys():
@@ -929,6 +1040,10 @@ class Movelist:
             return []
         else:
             bytes = self.move_ids_to_cancels[move_id].bytes
+            return Movelist.links_from_bytes(bytes, self)
+
+
+    def links_from_bytes(bytes, movelist):
             buf_all = []
 
             links = []
@@ -937,8 +1052,13 @@ class Movelist:
             index = 0
             buf_8b = []
             pos_to_conditions = {}
+            last_call_index = Cancel.get_last_call_address_index(bytes)
             while index < len(bytes):
-                inst = CC(int(bytes[index]))
+                try:
+                    inst = CC(int(bytes[index]))
+                except:
+                    inst = CC.UNK
+                is_last_call = index >= last_call_index
                 if inst == CC.START:
                     index += 3
                 elif inst in (CC.PEN_2A, CC.PEN_28, CC.PEN_29):
@@ -958,8 +1078,15 @@ class Movelist:
                         buf_8b.append(arg)
 
                     for _ in range(3):
-                        buf_all.append(int(bytes[index]))
-                        index += 1
+                        try:
+                            buf_all.append(int(bytes[index]))
+                            index += 1
+                        except Exception as e:
+                            import sys
+                            sys.stderr.write(str(last_call_index))
+                            sys.stderr.write(inst.name)
+                            sys.stderr.write(str(index))
+                            raise e
 
                 elif inst in (CC.EXE_25, CC.EXE_A5, CC.EXE_19, CC.EXE_13):
                     # print('{} {}: ({})'.format(inst, pos, Movelist.bytes_as_string((paper[max(pos - 29, 0):pos]))))
@@ -977,21 +1104,19 @@ class Movelist:
                         exe_arg_number = int(bytes[index + 2])
                         args = bytes[index - (3 * exe_arg_number): index]
                         state = -1
+                        ref_state = -1
+                        sc_only = False
                         for i, b in enumerate(args):
                             if b == 0x8b:
                                 state = b2i(args, i + 1, big_endian=True)
+                                ref_state = state
                                 if state == 0x30CC:  # soul charge marker, keep going
-                                    pass
+                                    sc_only = True
                                 else:
-                                    if state > 0x3000:  # this is kinda an escape value for stances??? and neutral???
-                                        state -= 0x3000
-                                        state += self.block_T_start
-                                    #elif state > 0x2000:
-                                        #state -= 0x2000
-                                        #state += self.block_S_start
+                                    state = decode_move_id(state, movelist)
                                     break
 
-                        links.append(Link(conditions, args, state, exe_type))
+                        links.append(Link(conditions, args, state, ref_state, exe_type, sc_only, is_last_call))
                         #print('{} {} {}: ({})'.format(inst, int(bytes[index + 1]), int(bytes[index + 2]), state))
 
                         conditions = []
@@ -1003,6 +1128,8 @@ class Movelist:
                     index += 1
 
             return links
+
+
 
     def write_graph(self):
         with open('graph.csv', 'w') as fw:
@@ -1072,21 +1199,15 @@ if __name__ == "__main__":
 
     #input_file = 'tira_movelist.byte.m0000'
 
-
     #input_file = 'movelists/xianghua_movelist.byte.m0000' #these come from cheat engine, memory viewer -> memory regions -> (movelist address) . should be 0x150000 bytes
-
-
-
-
-
 
     #movelists = load_all_movelists()
     #movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
-    movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/mitsurugi_movelist.m0000')]
-    #movelists = [Movelist.from_file('movelists/ivy_movelist.m0000')]
+    movelists = [Movelist.from_file('movelists/ivy_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/geralt_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/siegfried_movelist.m0000')]
 
@@ -1095,8 +1216,22 @@ if __name__ == "__main__":
     print('XXXXXXXXXXXXXXXXXXXX\n\n\n\n')
     #movelists[0].print_move_id_details(292)
     #movelists[0].print_move_id_details(285)
-    movelists[0].print_move_id_details(262)
+    #movelists[0].print_move_id_details(259)
+    for link in movelists[0].move_ids_to_cancels[440].links:
+        #if link.is_to_attack_or_stance(movelists[0]):
+        print(link)
 
+
+    true_counter = 0
+    total_counter = 0
+    for move in movelists[0].all_moves:
+        if move.cancel.move_id > 0xff and move.cancel.move_id < movelists[0].block_Q_length:
+            total_counter += 1
+            if b'\x8b\x00\x09\xa5\x01\x01\x96\x28' in move.cancel.bytes:
+                true_counter += 1
+            else:
+                print(move.cancel.move_id)
+    print('{}/{}'.format(true_counter, total_counter))
 
 
 

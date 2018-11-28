@@ -13,6 +13,7 @@ class GUI_MoveViewer:
         self.master = master
         self.master.geometry(str(1850) + 'x' + str(990))
         master.title("SCUFFLE Move Viewer")
+        master.iconbitmap('Data/icon.ico')
 
         self.movelist_name_var = StringVar()
         self.movelist_name_var.set('???')
@@ -63,6 +64,12 @@ class GUI_MoveViewer:
         self.move_id_label = Label(move_id_entry_container, textvariable=self.move_id_textvar)
         self.move_id_label.pack()
 
+        self.next_move_id_button = Button(move_id_entry_container, text="+", command=lambda: self.next_move_id_command())
+        self.prev_move_id_button = Button(move_id_entry_container, text="-", command=lambda: self.prev_move_id_command())
+
+        self.next_move_id_button.pack()
+        self.prev_move_id_button.pack()
+
         self.move_raw = Text(move_frame, height=24, width=12)
         self.move_raw .grid(sticky = N+W, row = 0, column = 1)
 
@@ -85,8 +92,8 @@ class GUI_MoveViewer:
         self.hitbox_id_var = StringVar()
         self.hitbox_id_var.set('-1')
 
-        self.next_hitbox_button = Button(hitbox_frame_header, text=">", command=lambda: self.next_hitbox_command())
-        self.prev_hitbox_button = Button(hitbox_frame_header, text="<", command=lambda: self.prev_hitbox_command())
+        self.next_hitbox_button = Button(hitbox_frame_header, text="+", command=lambda: self.next_hitbox_command())
+        self.prev_hitbox_button = Button(hitbox_frame_header, text="-", command=lambda: self.prev_hitbox_command())
         self.hitbox_label = Label(hitbox_frame_header, textvariable = self.hitbox_index_var)
         self.hitbox_id_label = Label(hitbox_frame_header, textvariable=self.hitbox_id_var)
 
@@ -126,14 +133,9 @@ class GUI_MoveViewer:
         self.clipboard_cancel_button = Button(loader_frame, text="Copy Cancel to Clipboard", command=lambda: GUI_MoveViewer.copy_to_clipboard_and_strip(self.cancel_raw.get('1.0', END)))
         self.clipboard_cancel_button.pack()
 
+        self.cancel_intr.tag_configure("bold", font="Helvetica 9 bold")
+        self.cancel_intr.tag_configure("soulcharge", font="Helvetica 9 bold", foreground='#2C75FF')
 
-
-
-        #self.cancel_raw = Text(self.cancel_frame, wrap='none', height=36, width=90)
-        #self.cancel_intr = Text(self.cancel_frame, wrap='none', height=36, width=36)
-
-        #self.cancel_raw.grid(sticky=W, row=0, column = 0)
-        #self.cancel_intr.grid(sticky=W, row=0, column = 1)
 
     def create_window_in_scrollable_viewport(self, master):
         scrollable_frame = Canvas(master, width=1850, height=990, scrollregion=(0, 0, 1850, 990))
@@ -180,6 +182,12 @@ class GUI_MoveViewer:
             self.hitbox_index = 0
         self.load_hitbox()
 
+    def next_move_id_command(self):
+        self.load_moveid(int(self.move_id_textvar.get().split(':')[1]) + 1)
+
+    def prev_move_id_command(self):
+        self.load_moveid(int(self.move_id_textvar.get().split(':')[1]) - 1)
+
     def load_moveid(self, move_id):
         try:
             id = int(move_id)
@@ -187,7 +195,7 @@ class GUI_MoveViewer:
             print('unrecognized move_id: {}'.format(move_id))
             return
 
-        if id < len(self.movelist.all_moves):
+        if id < len(self.movelist.all_moves) and id >= 0:
             self.move_id_textvar.set('move id: {}'.format(id))
             move = self.movelist.all_moves[id]
             bytes, guide = move.get_gui_guide()
@@ -223,6 +231,10 @@ class GUI_MoveViewer:
             self.cancel_raw.insert(END, raw)
             self.cancel_intr.delete(1.0, END)
             self.cancel_intr.insert(END, intr)
+
+            highlight_tag_and_remove(self.cancel_intr, '<sc>', 'soulcharge')
+            highlight_tag_and_remove(self.cancel_intr, '<b>', 'bold')
+
 
             GUI_MoveViewer.alternating_gray(self.cancel_raw)
             GUI_MoveViewer.alternating_gray(self.cancel_intr)
@@ -330,6 +342,45 @@ class ScrolledTextPair(Frame):
         is moved on a text widget'''
         self.scrollbar.set(*args)
         self.on_scrollbar('moveto', args[0])
+
+
+
+
+def highlight_tag_and_remove(tw, marker, highlight):
+    regex = '{}.*?{}'.format(marker, marker).replace('>', '\>').replace('<', '\<')
+    highlight_pattern_in_text_widget(tw, regex, marker, highlight, regexp=True)
+
+
+def highlight_pattern_in_text_widget(tw, pattern, marker, tag, start="1.0", end="end",
+                      regexp=False):
+    '''Apply the given tag to all text that matches the given pattern
+
+    If 'regexp' is set to True, pattern will be treated as a regular
+    expression according to Tcl's regular expression syntax.
+    '''
+
+    start = tw.index(start)
+    end = tw.index(end)
+    tw.mark_set("matchStart", start)
+    tw.mark_set("matchEnd", start)
+    tw.mark_set("searchLimit", end)
+
+    matches = []
+
+    count = IntVar()
+    while True:
+        index = tw.search(pattern, "matchEnd", "searchLimit",
+                            count=count, regexp=regexp)
+        if index == "": break
+        if count.get() == 0: break  # degenerate pattern which matches zero-length strings
+        tw.mark_set("matchStart", index)
+        tw.mark_set("matchEnd", "%s+%sc" % (index, count.get()))
+        tw.tag_add(tag, "matchStart", "matchEnd")
+
+        size = len(marker)
+
+        tw.delete('{}-{}c'.format('matchEnd', size), "matchEnd")
+        tw.delete("matchStart", '{}+{}c'.format('matchStart', size))
 
 
 if __name__ == '__main__':

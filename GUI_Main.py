@@ -229,7 +229,7 @@ class GUI_Main(Tk):
         elapsed_time = 1000 * (time2 - time1)
 
         if self.launcher.game_reader.HasWorkingPID():
-            if self.previous_working_pid == 10:
+            if self.previous_working_pid == 10: #arbitrary number
                 if self.move_viewer != None:
                     movelist = self.launcher.game_reader.p1_movelist
                     if movelist != None:
