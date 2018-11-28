@@ -1,31 +1,10 @@
 
 '''
-MOVELIST STRUCTURE
-[header]
-
-[list of every possible move]
-    [includes animation, length, and links to attack and cancel blocks]
-
-[list of every possible attack info]
-    [includes high/low, block stun, startup, etc.]
-
-[0xAC bytes of ???]
-
-[0x600 brief short section, possibly on cinematic things. first entry is Soul Charge]
-
-
-
-
-
-
-
-[bunch of cancel info???]
-
+see HowTheMovelistBytesWork.md for a full description of how we're parsing the movelist
 '''
 
 
 import struct
-from collections import Counter
 from MovelistEnums import *
 import GameplayEnums
 
@@ -44,8 +23,18 @@ def b1i (bytes, index : int):
 def b4f (bytes, index : int):
     return struct.unpack('f', bytes[index: index + 4])[0]
 
-def encode_move_id(move_id):
-    pass
+def encode_move_id(decoded_move_id, movelist):
+    move_id = decoded_move_id
+    if move_id > movelist.block_T_start:  # this is kinda an escape value for stances??? and neutral???
+        move_id -= movelist.block_T_start
+        move_id += 0x3000
+    elif move_id > movelist.block_S_start:
+        move_id -= movelist.block_S_start
+        move_id += 0x2000
+    elif move_id > movelist.block_R_start:
+        move_id -= movelist.block_R_start
+        move_id += 0x1000
+    return move_id
 
 def decode_move_id(encoded_move_id, movelist):
     move_id = encoded_move_id
@@ -109,11 +98,7 @@ class Move:
                 cancel_weight -= startup
             return cancel_weight
 
-
-
-
     def get_no_hitbox_startup(self):
-        carried_block_adv = 0
         startup = self.cancel.get_fastest_exit(self.total_frames)
         return startup
 
@@ -138,17 +123,8 @@ class Move:
             hit_stun = a.hit_stun
             counter_stun = a.counter_stun
 
-
-            do_calculate_counter = (a.hit_effect != a.counter_effect) or (a.hit_stun != a.counter_stun)
-            if do_calculate_counter:
-                cl = a.counter_launch
-                c = recovery - counter_stun
-            else:
-                cl = a.counter_launch
-                c = recovery - counter_stun
-
-            #bhc = '{} {} {} {} {}'.format(startup, recovery - block_stun, a.hit_launch, recovery - hit_stun, c, a.active, a.damage)
-            #print(bhc)
+            cl = a.counter_launch
+            c = recovery - counter_stun
 
             attack_type = a.hit_level
             try:
@@ -193,9 +169,6 @@ class Move:
         return self.bytes, guide
 
 
-
-
-
 class Attack:
     LENGTH = 0x70
     def __init__(self, bytes):
@@ -205,13 +178,13 @@ class Attack:
         self.mystery_02 = b2i(self.bytes, 2) #Counter({128: 125, 0: 43, 17: 21, 2560: 18, 1: 14, 6144: 11, 2048: 10, 512: 10, 2: 9, 6784: 8, 51: 8, 4096: 6, 162: 4, 4608: 4, 34: 4, 513: 4, 640: 3, 641: 3, 3: 2, 129: 2, 3072: 1, 2099: 1})
 
         self.mystery_08 = b2i(self.bytes, 0x08) # these next 5 turned out to be physics for hit/hit launch/counter/counter launch/aerial/blocking/and grounded
-        self.mystery_20 = b2i(self.bytes, 0x20) #5a, b4 ???
+        self.mystery_20 = b2i(self.bytes, 0x20)
 
-        self.mystery_24 = b2i(self.bytes, 0x24) #b0 ff, 48??
+        self.mystery_24 = b2i(self.bytes, 0x24)
 
-        self.mystery_26 = b2i(self.bytes, 0x26)#00  #e2ff
+        self.mystery_26 = b2i(self.bytes, 0x26)
 
-        self.mystery_2A = b2i(self.bytes, 0x2A) #14 # 00 #46
+        self.mystery_2A = b2i(self.bytes, 0x2A)
 
         self.hit_level = b1i(self.bytes, 0x32)
         #0x33?
@@ -357,7 +330,6 @@ class Cancel:
         except:
             return len(bytes) - 1
 
-
     def get_cancelable_frames(self): #the number of frames 'early' the move can be canceled
         try:
             right_split = self.bytes.split(b'\x8b\x30\x20')[1]
@@ -421,9 +393,6 @@ class Cancel:
                         else:
                             tag = '<b>'
                         state = '{}[id:{}{}{}]'.format(state, tag, alias, tag)
-
-
-
                     except:
                         state = 'ERROR'
                         state_args = 'ERROR'
@@ -457,18 +426,12 @@ class Cancel:
                 list_of_bytes.append((current_bytes, 'RETURN ({})'.format(inst.value), index))
                 current_bytes =  b''
 
-
-
         guide = []
         last_i = 0
         for bytes, desc, i in list_of_bytes:
             guide.append((Movelist.bytes_as_string(bytes), '{:04x}: {}'.format(last_i, desc)))
             last_i = i
         return guide
-
-
-
-
 
 
 class Link:
@@ -529,8 +492,6 @@ class Link:
                     if movelist.all_moves[self.move_id].cancel.has_at_least_one_button_press():
                         return True
         return False
-
-
 
     def get_command_string(self):
         if self.auto_cancel and not self.button_press:
@@ -696,18 +657,13 @@ class Movelist:
             self.move_ids_to_cancels[i] = cancel
             self.all_moves[i].set_cancel(cancel)
 
-
         self.move_ids_to_commands = self.parse_neutral()
         move_ids_to_check = list(self.move_ids_to_commands.keys())
-        #print(sorted(self.move_ids_to_commands.keys()))
-
-
         self.nodes = []
 
         while len(move_ids_to_check) > 0:
             move_id = move_ids_to_check.pop(0)
             original_command = self.move_ids_to_commands[move_id]
-            #ids_to_commands = self.parse_move(move_id)
             ids_to_commands = {}
             if move_id < len(self.all_moves) and move_id >= 0:
                 for link in self.move_ids_to_cancels[move_id].links:
@@ -726,67 +682,11 @@ class Movelist:
                         self.move_ids_to_commands[cancelable_move_id] = '{}{}'.format(original_command, new_command)
                     move_ids_to_check.append(cancelable_move_id)
 
-
-
-
     def get_command_by_move_id(self, move_id):
         if move_id in self.move_ids_to_commands:
             return self.move_ids_to_commands[move_id]
         else:
             return '???'
-
-    def print_cancel_bytes_by_move_id(self, move_id):
-        if move_id < len(self.all_moves):
-            print(move_id)
-
-            if len(self.all_moves[move_id].attack_indexes) > 0:
-                attack_index = self.all_moves[move_id].attack_indexes[0]
-                print(attack_index)
-                attack = self.all_attacks[attack_index]
-                Movelist.print_bytes(attack.bytes)
-
-
-                cancel_address = self.all_moves[move_id].cancel_address
-                bytes = self.all_cancels[cancel_address].bytes
-
-
-                print(hex(attack.hit_effect))
-                cancel_frames = []
-                running_index = 0
-                for index in range(0, len(bytes), 1):
-                    if int(bytes[index + 1 : index + 2]) in [CC.EXE_25.value, CC.EXE_19.value]:
-                        footer = bytes[index: index + 3]
-                        if footer[:2] == b'\x25\x07': #or footer == b'\x25\x0d\x06':
-                            if bytes[index + 2: index + 3] != b'\x01' or False:
-                                move_cancel_bytes = bytes[running_index: index + 3]
-                                Movelist.print_bytes(move_cancel_bytes)
-                                self.parse_move_cancel(move_cancel_bytes)
-                        running_index = index + 3
-
-
-    def parse_move_cancel(self, bytes):
-        buffer_89 = bytes.split(b'\x89')
-        #buffer_89 = [x[:2] for x in buffer_89]
-
-        buffer_8B = bytes.split(b'\x8B')
-        #buffer_8B = [x[:2] for x in buffer_8B]
-
-        buffer_89.pop(0) #this is the stuff before 89, which we don't care about and will make our indexes weird
-        buffer_8B.pop(0)
-
-        win_start = self.search_for_cancel_arg(buffer_89, 0, -1)
-        if len(buffer_89[0]) == 2: #if the second 89 is directly after the first, then we have an exit window as well
-            win_end = self.search_for_cancel_arg(buffer_89, 1, -1)
-        else:
-            win_end = -2
-
-        cancel_type = self.search_for_cancel_arg(buffer_8B, 0, -1)
-        cancel_type_arg = self.search_for_cancel_arg(buffer_8B, 1, -1)
-
-        next_move = self.search_for_cancel_arg(buffer_8B, -1, -1)
-
-        print('cancel: {}-{}  x{} input: {} / {}'.format(win_start, win_end, next_move, hex(cancel_type), hex(cancel_type_arg)))
-
 
     def search_for_cancel_arg(self, array, index, default):
         if index < len(array) and len(array) >= 2:
@@ -801,63 +701,10 @@ class Movelist:
     def bytes_as_string(byte_array):
         return ' '.join('{:02x}'.format(x) for x in byte_array)
 
-
-
     def from_file(filename):
         with open(filename, 'rb') as fr:
             raw_bytes = fr.read()
         return Movelist(raw_bytes, filename)
-
-    def parse_move(self, move_id):
-        move_ids_to_commands = {}
-
-        if move_id in self.move_ids_to_cancels.keys():
-            cancel = self.move_ids_to_cancels[move_id]
-        else:
-            return move_ids_to_commands
-
-        i = 0
-        buf_8b = [-1, -1, -1, -1, -1]
-        buf_89 = [-1, -1, -1, -1, -1]
-
-        button_code = -1
-        button_code_code = -1
-
-        expecting_cancel = False
-
-        while i < len(cancel.bytes):
-            raw = int(cancel.bytes[i])
-            inst = CC(raw)
-            if inst in Movelist.THREE_BYTE_INSTRUCTIONS:
-                arg = b2i(cancel.bytes, i + 1, big_endian=True)
-                if inst == CC.ARG_8B:
-                    buf_8b.append(arg)
-                if inst == CC.ARG_89:
-                    buf_89.append(arg)
-                if inst == CC.EXE_A5:
-                    if arg == 0x0102 or arg == 0x0103 or arg == 0x1402:
-                        button_code = buf_8b[-1]
-                        button_code_code = buf_8b[-2]
-                    if arg == 0x2502:
-                        expecting_cancel = True
-                if inst == CC.EXE_25:
-                    if expecting_cancel or True:
-                        expecting_cancel = False
-                        clean_arg = arg >> 8
-                        if clean_arg == 0x07:
-                            move_id = buf_8b[-1]
-                            if move_id < len(self.move_ids_to_cancels):
-                                button = Movelist.button_parse(button_code_code, button_code)
-                                move_ids_to_commands[move_id] = button
-                                #print('{} -> x{}'.format(button, buf_8b[-1]))
-
-            if inst in Movelist.THREE_BYTE_INSTRUCTIONS:
-                i += 3
-            else:
-                i += 1
-
-        return move_ids_to_commands
-
 
     def button_parse(type_code, input_code):
         if enum_has_value(InputType, type_code) and enum_has_value(PaddedButton, input_code):
@@ -869,8 +716,6 @@ class Movelist:
                 codes_to_directions = {
                     PaddedButton.Forward : '6',
                     PaddedButton.Forward_ALT: '6',
-
-
                 }
                 if input in codes_to_directions.keys():
                     return'{}'.format(codes_to_directions[input])
@@ -891,8 +736,6 @@ class Movelist:
 
 
     def parse_neutral(self):
-        #cancels = sorted(self.all_cancels.values(), key=lambda x: x.bytes.count(b'\x19')) # incredibly hackish way to find neutral
-
         cancels = [x for x in self.all_cancels.values() if x.type >= 8] #less hackish way to find neutral
 
         move_ids_to_commands = {}
@@ -924,9 +767,6 @@ class Movelist:
                         #unlisted_singles.append((inst, i))
                         next_instruction = inst
                         #raise e
-
-
-
                     #if it's an argument instruction, we store it for future use in an exe instruction
                     if next_instruction in Movelist.THREE_BYTE_INSTRUCTIONS:
                         args_expected = 2
@@ -1000,40 +840,6 @@ class Movelist:
                             next_19_is_backturned_move = False
 
         return move_ids_to_commands
-
-    def pen_parse(self, move_id):
-        bytes = self.move_ids_to_cancels[move_id].bytes
-
-        paper = []
-        for _ in range(4 * len(bytes)):
-            #paper.append(int(b'\x00'))
-            paper.append(0)
-
-        pos = 0
-        index = 0
-        while index < len(bytes):
-            inst =  CC(int(bytes[index]))
-            if inst in (CC.PEN_2A, CC.PEN_28, CC.PEN_29):
-                arg = b2i(bytes, index + 1, big_endian=True)
-                pos = arg
-                index += 3
-            elif inst in (CC.ARG_8B, CC.ARG_8A, CC.ARG_89):
-                for _ in range(3):
-                    paper[pos] = int(bytes[index])
-                    pos += 1
-                    index += 1
-            elif inst in (CC.EXE_25, CC.EXE_A5, CC.EXE_19, CC.EXE_13):
-                #print('{} {}: ({})'.format(inst, pos, Movelist.bytes_as_string((paper[max(pos - 29, 0):pos]))))
-                if inst == CC.EXE_25:
-                    print('{} {} {} [{}]: ({})'.format(inst, int(bytes[index + 1]), int(bytes[index + 2]), pos, Movelist.bytes_as_string((paper[max(pos - 30, 0):pos]))))
-                index += 3
-            else:
-                paper[pos] = int(bytes[index])
-                print('{}'.format(paper[pos]))
-                pos += 1
-                index += 1
-
-        print(paper)
 
     def condition_parse(self, move_id):
         if not move_id < len(self.move_ids_to_cancels) or move_id < 0:
@@ -1203,11 +1009,11 @@ if __name__ == "__main__":
 
     #movelists = load_all_movelists()
     #movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
-    #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
+    movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/mitsurugi_movelist.m0000')]
-    movelists = [Movelist.from_file('movelists/ivy_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/ivy_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/geralt_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/siegfried_movelist.m0000')]
 
@@ -1233,6 +1039,9 @@ if __name__ == "__main__":
                 print(move.cancel.move_id)
     print('{}/{}'.format(true_counter, total_counter))
 
+    for cancel in sorted(movelists[0].move_ids_to_cancels.values(), key=lambda x: x.type):
+        if cancel.type > 1:
+            print('{} : {} : 0x{:04x}'.format(cancel.type, cancel.move_id, encode_move_id(cancel.move_id, movelists[0])))
 
 
 
