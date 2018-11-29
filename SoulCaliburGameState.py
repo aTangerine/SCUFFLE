@@ -80,26 +80,15 @@ class SC6GameReader:
                     p1_timer_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p1_timer_block_breadcrumb, 0x200)
                     p2_timer_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p2_timer_block_breadcrumb, 0x200)
 
-
-                    p1_last_attack_address = GetValueFromAddress(process_handle, AddressMap.p1_last_attack_address)
                     p1_total_animation_frames = GetValueFromAddress(process_handle, AddressMap.p1_total_animation_frames, isFloat=True)
                     p1_end_of_move_cancelable_frames = GetValueFromAddress(process_handle, AddressMap.p1_end_of_move_cancelable_frames, is_short =True)
-                    p1_is_currently_jumping = GetValueFromAddress(process_handle, AddressMap.p1_is_currently_jumping_address, is_short =True)
-                    p1_is_currently_crouching = GetValueFromAddress(process_handle, AddressMap.p1_is_currently_crouching_address, is_short=True)
-                    p1_is_currently_guard_impacting = GetValueFromAddress(process_handle, AddressMap.p1_is_currently_guard_impacting, is_short=True)
-                    p1_is_currently_armoring = GetValueFromAddress(process_handle, AddressMap.p1_is_currently_armoring, is_short=True)
 
-                    p1_global = SC6GlobalBlock(p1_last_attack_address, p1_total_animation_frames, p1_end_of_move_cancelable_frames, p1_is_currently_jumping, p1_is_currently_crouching, p1_is_currently_guard_impacting, p1_is_currently_armoring)
+                    p1_global = SC6GlobalBlock(p1_total_animation_frames, p1_end_of_move_cancelable_frames)
 
-
-                    p2_last_attack_address = GetValueFromAddress(process_handle, AddressMap.p2_last_attack_address)
                     p2_total_animation_frames = GetValueFromAddress(process_handle, AddressMap.p2_total_animation_frames, isFloat=True)
                     p2_end_of_move_cancelable_frames = GetValueFromAddress(process_handle, AddressMap.p2_end_of_move_cancelable_frames, is_short=True)
-                    p2_is_currently_jumping = GetValueFromAddress(process_handle, AddressMap.p2_is_currently_jumping_address, is_short=True)
-                    p2_is_currently_crouching = GetValueFromAddress(process_handle, AddressMap.p2_is_currently_crouching_address, is_short=True)
-                    p2_is_currently_guard_impacting = GetValueFromAddress(process_handle, AddressMap.p2_is_currently_guard_impacting, is_short=True)
-                    p2_is_currently_armoring = GetValueFromAddress(process_handle, AddressMap.p2_is_currently_armoring, is_short=True)
-                    p2_global = SC6GlobalBlock(p2_last_attack_address, p2_total_animation_frames, p2_end_of_move_cancelable_frames, p2_is_currently_jumping, p2_is_currently_crouching, p2_is_currently_guard_impacting, p2_is_currently_armoring)
+
+                    p2_global = SC6GlobalBlock(p2_total_animation_frames, p2_end_of_move_cancelable_frames)
 
                     value_p1 = PlayerSnapshot(self.p1_movelist, p1_startup_block, p1_movement_block, p1_timer_block, p1_global)
                     value_p2 = PlayerSnapshot(self.p2_movelist, p2_startup_block, p2_movement_block, p2_timer_block, p2_global)
@@ -232,18 +221,13 @@ class SC6StartupBlock:
 
 
 class SC6GlobalBlock:
-    def __init__(self, last_attack_address, total_animation_frames, end_of_move_cancelable_frames, is_currently_jumping, is_currently_crouching, is_currently_guard_impacting, is_currently_armoring):
-        self.last_attack_address = last_attack_address
+    def __init__(self, total_animation_frames, end_of_move_cancelable_frames):
         self.total_animation_frames = int(total_animation_frames)
         self.end_of_move_cancelable_frames = end_of_move_cancelable_frames
-        self.is_currently_jumping = is_currently_jumping
-        self.is_currently_crouching = is_currently_crouching
-        self.is_currently_guard_impacting = is_currently_guard_impacting
-        self.is_currently_armoring = is_currently_armoring
 
     def __repr__(self):
-        repr = "{} | {} | {} |J:{} |C: {} | GI: {} | REV: {}".format(
-            hex(self.last_attack_address), self.total_animation_frames, self.end_of_move_cancelable_frames, self.is_currently_jumping, self.is_currently_crouching, self.is_currently_guard_impacting, self.is_currently_armoring)
+        repr = "{} | {} |".format(
+            self.total_animation_frames, self.end_of_move_cancelable_frames)
         return repr
 
 

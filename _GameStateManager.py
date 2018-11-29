@@ -7,8 +7,8 @@ class GameStateManager:
     def __init__(self):
         self.game_reader = SoulCaliburGameState.SC6GameReader()
         self.p1_move_id = 0
-        self.p1_backfiller = FrameBackCounter(True)
-        self.p2_backfiller = FrameBackCounter(False)
+        #self.p1_backfiller = FrameBackCounter(True)
+        #self.p2_backfiller = FrameBackCounter(False)
         self.move_ids_record = [[], []]
         self.bhc_stuns_record = [[], []]
 
@@ -17,15 +17,16 @@ class GameStateManager:
         if successful_update:
             try:
                 snapshots = self.game_reader.snapshots
-                self.p1_backfiller.update(snapshots)
-                self.p2_backfiller.update(snapshots)
+                #self.p1_backfiller.update(snapshots)
+                #self.p2_backfiller.update(snapshots)
                 if len(snapshots) > 4:
                     self.p1_move_id = snapshots[-1].p1.movement_block.movelist_id
                     did_p1_attack_change = snapshots[-2].p1.movement_block.movelist_id != snapshots[-3].p1.movement_block.movelist_id
                     if did_p1_attack_change:
                         t, s = self.create_frame_entry('p1', snapshots[-1].p1, self.move_ids_record[0], self.bhc_stuns_record[0], self.game_reader.p1_movelist)
                         if t != None:
-                            self.p1_backfiller.reset(t, 4, snapshots)
+                            pass
+                            #self.p1_backfiller.reset(t, 4, snapshots)
                         if s != None:
                             for entry in s:
                                 print(entry)
@@ -38,7 +39,8 @@ class GameStateManager:
                     if did_p2_attack_change:
                         t, s = self.create_frame_entry('p2', snapshots[-1].p2, self.move_ids_record[1],self.bhc_stuns_record[1], self.game_reader.p2_movelist)
                         if t != None:
-                            self.p2_backfiller.reset(t, 4, snapshots)
+                            pass
+                            #self.p2_backfiller.reset(t, 4, snapshots)
                         if s != None:
                             for entry in s:
                                 print(entry)
@@ -68,14 +70,14 @@ class GameStateManager:
 
     def FrameStringFromMovelist(p_str, p : SoulCaliburGameState.PlayerSnapshot, movelist, move_ids, stuns):
 
-        def pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act):
+        def pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act, tf):
             if cl == hl and c == h:
                 cl = ''
                 c = ''
             else:
                 c = FrameAnalyzer.StringifyAdvantage(c)
 
-            str = "FDO:{}:{:^3}|{:^7}|{:^4}|{:^2}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|".format(
+            str = "FDO:{}:{:^3}|{:^7}|{:^4}|{:^2}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|{}".format(
                 p_str,
                 id,
                 p.movelist.get_command_by_move_id(id)[-7:],
@@ -88,11 +90,12 @@ class GameStateManager:
                 p.startup_block.guard_damage,
                 act,
                 t,
+                ' '.join(tf),
             )
             strings.append(str)
 
         def no_hitbox_data():
-            t, s, b, hl, h, cl, c, d, at, act, rec = (0, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 0)
+            t, s, b, hl, h, cl, c, d, at, act, rec, tf = (0, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 0, [''])
             #s = p.movelist.all_moves[id].get_no_hitbox_startup()
             if move_ids[-1] >= 0 and move_ids[-1] < len(p.movelist.all_moves):
                 #weight = p.movelist.all_moves[previous_move_id[-1]].get_weight_to_move_id(id)
@@ -106,7 +109,9 @@ class GameStateManager:
                 h *= -1
                 c *= -1
 
-            pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act)
+                tf = p.movelist.all_moves[move_ids[-1]].cancel.get_technical_frames()
+
+            pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act, tf)
             return id, b, h, c, t, rec, strings
 
 
@@ -124,8 +129,8 @@ class GameStateManager:
                 return no_hitbox_data()
             else:
                 for frame_data in frame_datas:
-                    t, s, b, hl, h, cl, c, d, at, act, rec = frame_data
-                    pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act)
+                    t, s, b, hl, h, cl, c, d, at, act, rec, tf = frame_data
+                    pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act, tf)
                 return id, b, h, c, t, rec, strings
 
 

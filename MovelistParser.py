@@ -114,6 +114,8 @@ class Move:
 
         cf = self.cancel.get_cancelable_frames()
 
+        tf = self.cancel.get_technical_frames()
+
         for a in self.attacks:
             startup = a.startup
             t = self.total_frames - startup
@@ -134,7 +136,7 @@ class Move:
 
             active_frames = a.active - a.startup + 1
 
-            data.append((t, startup + 1, recovery - block_stun, a.hit_launch, recovery - a.hit_stun, cl, c, a.damage, attack_type, active_frames, recovery))
+            data.append((t, startup + 1, recovery - block_stun, a.hit_launch, recovery - a.hit_stun, cl, c, a.damage, attack_type, active_frames, recovery, tf))
         return data
 
     def get_gui_guide(self):
@@ -339,6 +341,74 @@ class Cancel:
             cancelable_frames = 0
 
         return cancelable_frames
+
+    def get_technical_frames(self):
+        infinite_set = (0x7FFF, 0x7600)
+        notes = []
+
+        splits = self.bytes.split(b'\x8b\x30\x5d')#TC, TJ, and possibly airborne frames
+        if len(splits) > 1:
+            for split in splits[1:]: #8b xx xx 89 xx xx 89 xx xx #either 89 can be replaced by an 8b 7f ff for the start/end of a move
+                type = b2i(split, 1, big_endian=True)
+                start = b2i(split, 4, big_endian=True)
+                stop = b2i(split, 7, big_endian=True)
+
+                if start in infinite_set:
+                    start = 0
+                else:
+                    start += 1
+                if stop in infinite_set:
+                    stop = ''
+                else:
+                    stop += 2  # possible that stop should only be +1 here but +2 matches our backfiller output
+
+                if type == 2:
+                    notes.append('TC[{}-{}]'.format(start, stop))
+                elif type == 4:
+                    notes.append('TJ[{}-{}]'.format(start, stop))
+                elif type == 0x28: #airborne???
+                    pass
+                elif type == 0x62: #even more airborne???
+                    pass
+
+        splits = self.bytes.split(b'\x8b\x30\x64')#GI frames
+        if len(splits) > 1:
+            for split in splits[1:]:
+                type_a = b2i(split, 1, big_endian=True) #mostly 0x149, 0x14a for armored/invincible?
+                start = b2i(split, 4, big_endian=True)
+                stop = b2i(split, 7, big_endian=True)
+                type_b = b2i(split, 10, big_endian=True) # for GI 325/323 seem to both be mid/high, 322 seems to be lows #for armor, this seems to be damage absorbable before break
+                vs_h = b2i(split, 13, big_endian=True) == 0x01 #horizontals
+                vs_v = b2i(split, 16, big_endian=True) == 0x01 #verticals
+                vs_k = b2i(split, 19, big_endian=True) == 0x01 #most kicks are horizontals so only really useful for horizontal impacts?
+                vs_unk = b2i(split, 22, big_endian=True) == 0x01 #???
+
+                if start in infinite_set:
+                    start = 0
+                else:
+                    start += 2
+                if stop in infinite_set:
+                    stop = ''
+                else:
+                    stop += 3
+
+                gi_effective_against = ''
+                if vs_h:
+                    gi_effective_against += ('H')
+                if vs_v:
+                    gi_effective_against += ('V')
+                if vs_k:
+                    gi_effective_against += ('K')
+
+                if type_a == 0x14a:
+                    red_or_green = 'REV{}{}{}'.format('{', type_b, '}')
+                else:
+                    if type_b == 0x142:
+                        gi_effective_against = gi_effective_against.swapcase()
+                    red_or_green = 'GI{}{}{}'.format('{', gi_effective_against, '}')
+
+                notes.append('{}[{}-{}]'.format(red_or_green, start, stop))
+        return notes
 
     def get_gui_guide(self):
         guide = []
@@ -1008,8 +1078,8 @@ if __name__ == "__main__":
     #input_file = 'movelists/xianghua_movelist.byte.m0000' #these come from cheat engine, memory viewer -> memory regions -> (movelist address) . should be 0x150000 bytes
 
     #movelists = load_all_movelists()
-    #movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
-    movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
+    movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/mitsurugi_movelist.m0000')]
@@ -1040,8 +1110,27 @@ if __name__ == "__main__":
     print('{}/{}'.format(true_counter, total_counter))
 
     for cancel in sorted(movelists[0].move_ids_to_cancels.values(), key=lambda x: x.type):
-        if cancel.type > 1:
-            print('{} : {} : 0x{:04x}'.format(cancel.type, cancel.move_id, encode_move_id(cancel.move_id, movelists[0])))
+
+        splits = cancel.bytes.split(b'\x8b\x30\x64')
+        if len(splits) > 1:
+            for split in splits[1:]:
+                #try:
+                type_a = b2i(split, 1, big_endian=True)
+                start = b2i(split, 4, big_endian=True)
+                stop = b2i(split, 7, big_endian=True)
+                type_2 = b2i(split, 10, big_endian=True)
+                try:
+                    com = movelists[0].move_ids_to_commands[cancel.move_id]
+                except:
+                    com = '??'
+                print('{} : {} : {} : {} : {} : {}'.format(com, cancel.move_id, type_a, start, stop, type_2))
+                #except:
+                    #print('!! {} !! '.format(cancel.move_id))
+
+
+
+        #if cancel.type > 1:
+            #print('{} : {} : 0x{:04x}'.format(cancel.type, cancel.move_id, encode_move_id(cancel.move_id, movelists[0])))
 
 
 
