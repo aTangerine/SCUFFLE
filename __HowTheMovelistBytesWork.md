@@ -4,7 +4,7 @@
 ###### Documentation for those hoping to parse the Soul Calibur 6 movelist
 
 
-###Overview
+### Overview
 Each character in Soul Calibur comes with a static chunk of memory that serves as the source for many or all values
 associated with frame data. Startup, active frames, block stun, etc... For our purposes we'll refer to this block of
 static memory as the 'movelist'.
@@ -14,7 +14,7 @@ As you read this document, you may benefit from following the code MovelistParse
 You can also view these bytes with the SCUFFLE move viewer, launchable from the menu (SCUFFLE > Move Viewer) or use
 a hex editor to view the movelists in /movelists.
 
-#####Movelist Structure
+##### Movelist Structure
 * A movelist starts with 30 bytes **header**. It always starts with the bytes 'KH11' and then lists a series of useful
 addresses, the number of moves, and some useful breakpoints in how the moves are catagorized.
 * After the header comes the list of **moves**. Characters have about 3 thousand moves. Each move is 72 bytes and 
@@ -38,13 +38,13 @@ a finite state machine or simple interpreted/compiled language. They control, am
     * Tracking(?)
  
 
-#####What's not in the movelist
+##### What's not in the movelist
 * Hitbox location and placement seems to be stored at least partly with the move animation.
 * The character's name or other identifier
 * Any current state information, the movelist is completely static.
 
 
-###Header
+### Header
 * 30 bytes
 * [00-0B] Constant. String 'KH11' or Int 0x3131484b or Byte Array [4B 48 31 31 00 00 00 00 00 00 00 00]
 * [0C-0E] Short int: the total number of moves listed (plus one)
@@ -61,32 +61,32 @@ a finite state machine or simple interpreted/compiled language. They control, am
 * [2C-2F] Always the same bytes [86 1A 40 00]
 
 
-###Moves
+### Moves
 * 70 bytes
 * Animation id
 * Various animation modifiers
 * Address of cancel block associated with this move
 * Up to 6 attack indexes
 
-###Attacks
+### Attacks
 * 112 bytes
 * Physics
 * Startup/Active Frames/Block Stun etc.
 * Launch type
 * Block type (for example force crouching)
 
-###Unknown bytes 1
+### Unknown bytes 1
 
-###Unknown bytes 2
+### Unknown bytes 2
 * May have something to do with cinematics?
 
-###Cancel Block
+### Cancel Block
 * No fixed length, must be interpreted. Most commands come in sets of 3 bytes although there are occasional 1 byte commands.
 * In three byte commands, the first byte is the instruction (MOVE, IF, STORE) while the next two are the arguments.
 * Arguments that span two bytes are big endian ([BIG BYTE] [SMALL BYTE]).
 * Some instructions take two seperate arguments, one from each byte.
 
-####Commands
+#### Commands
 * 01 [xx xx]
   * Begins every cancel block. The arguments denote the 'type' of cancel blocks. Goes up to 00 0a. Most are simply 00 00, but neutral is 
   always 00 08. Characters have the same or similar numbers of 00 02 to 00 0a cancel blocks, so these likely denote universal moves like
@@ -125,9 +125,9 @@ a finite state machine or simple interpreted/compiled language. They control, am
 * 19 [xx] [xx]
   * Similar to 25 [xx] [xx] but different. Tend to be used in the neutral/backturned cancel block where 25 [xx][xx] might otherwise be expected.
   
-####Byte Codes
+#### Byte Codes
 
-#####Encoded vs Decoded Move Id's
+##### Encoded vs Decoded Move Id's
 * A move id is the index of a move in the move list and is used extensively in Cancel Blocks.
 * In order to (presumabely?) preserve commonality between characters, move ids are encoded in such a way that many
 universal moves will share the same move id between characters.
@@ -137,13 +137,13 @@ universal moves will share the same move id between characters.
 are the offset from the start of that quadrant.
 * To get the decoded move id, drop the leftmost bits and add the appropriate offset.
 
-######Example
+###### Example
 0x30CC is the universal encoded move id for 'currently in soul charge'. This indicates it can be found in the 
 fourth section with an offset of 0x0CC. For Voldo, his header bytes shows that his fourth section has an offset of 0x98C.
 The index of Voldo's soul charge move is 0x0CC + 0x98C. For Xianghua, her header bytes have a fourth block offset of
 0x949 so her soul charge move is indexed at 0x0CC + 0x949.
 
-####Known Patterns
+#### Known Patterns
  * 8b [0x3020] 89 [recovery state] 89 [early cancelable frames] 89 [??] 25 [0d 04]
    * Very common pattern located near the beginning of a cancel block.
    * The [recovery state] is usually 00 c8 for standing or 00 c9 for crouching.
