@@ -33,7 +33,6 @@ class GUI_MoveViewer:
         self.label.pack()
 
 
-
         self.load_movelist_button = Button(loader_frame, text="Load Movelist", command=lambda: self.load_movelist_dialog())
         self.load_movelist_button.pack()
 
@@ -56,13 +55,15 @@ class GUI_MoveViewer:
         move_id_entry.bind('<Return>', lambda x: self.load_moveid(move_id_entry.get()))
         move_id_entry.pack()
 
-        self.load_button = Button(move_id_entry_container, text="Load", command=lambda: self.load_moveid(move_id_entry.get()))
-        self.load_button.pack()
+
 
         self.move_id_textvar = StringVar()
         self.move_id_textvar.set('-')
         self.move_id_label = Label(move_id_entry_container, textvariable=self.move_id_textvar)
         self.move_id_label.pack()
+
+        self.load_button = Button(move_id_entry_container, text="Load", command=lambda: self.load_moveid(move_id_entry.get()))
+        self.load_button.pack()
 
         self.next_move_id_button = Button(move_id_entry_container, text="+", command=lambda: self.next_move_id_command())
         self.prev_move_id_button = Button(move_id_entry_container, text="-", command=lambda: self.prev_move_id_command())
@@ -97,10 +98,10 @@ class GUI_MoveViewer:
         self.hitbox_label = Label(hitbox_frame_header, textvariable = self.hitbox_index_var)
         self.hitbox_id_label = Label(hitbox_frame_header, textvariable=self.hitbox_id_var)
 
-        self.prev_hitbox_button.grid(sticky=N+W, row=0, column=0)
-        self.hitbox_label.grid(sticky=N+W, row=0, column=1)
-        self.next_hitbox_button.grid(sticky=N+W, row = 0, column=2)
-        self.hitbox_id_label.grid(sticky=N + W, row=1, column=0, columnspan = 3)
+        self.prev_hitbox_button.grid(sticky=N, row=3, column=0)
+        self.hitbox_label.grid(sticky=N, row=0, column=0)
+        self.next_hitbox_button.grid(sticky=N, row = 2, column=0)
+        self.hitbox_id_label.grid(sticky=N, row=1, column=0)
 
 
         #self.hitbox_raw = Text(hitbox_frame, wrap='none', height=36, width=18)
@@ -118,23 +119,37 @@ class GUI_MoveViewer:
         self.cancel_frame = Frame(self.main_window)
         self.cancel_frame.grid(sticky=W+E+N+S, row = 0, column = 3)
 
-        self.cp = ScrolledTextPair(self.cancel_frame,  (70, 50), 60)
+        self.cp = ScrolledTextPair(self.cancel_frame,  (70, 50), 40)
         self.cp.grid(sticky=N+W, row = 0, column = 0)
 
         self.cancel_raw = self.cp.left
         self.cancel_intr = self.cp.right
 
+
+        self.link_frame = Frame(self.cancel_frame)
+        self.link_frame.grid(sticky=W+E+N+S, row = 1, column = 0)
+
+        self.frame_data_intr = Text(self.link_frame, width=120, height=1)
+        self.frame_data_intr.grid(sticky=W + E + N + S, row=0, column=0, columnspan=2)
+
+        self.link_intr = Text(self.link_frame, width=80, height=18)
+        self.link_intr.grid(sticky=W + E + N + S, row=1, column=0)
+
+
+
         self.clipboard_hitbox_button = Button(hitbox_frame_header, text="Copy Hitbox to Clipboard", command=lambda:GUI_MoveViewer.copy_to_clipboard_and_strip(self.hitbox_raw.get('1.0', END)))
-        self.clipboard_hitbox_button.grid(sticky=N+W+E, row=2, column=0,columnspan=3)
+        self.clipboard_hitbox_button.grid(sticky=N+W+E, row=4, column=0)
 
         self.clipboard_move_button = Button(move_id_entry_container, text="Copy Move to Clipboard", command=lambda: GUI_MoveViewer.copy_to_clipboard_and_strip(self.move_raw.get('1.0', END)))
         self.clipboard_move_button.pack()
 
-        self.clipboard_cancel_button = Button(loader_frame, text="Copy Cancel to Clipboard", command=lambda: GUI_MoveViewer.copy_to_clipboard_and_strip(self.cancel_raw.get('1.0', END)))
-        self.clipboard_cancel_button.pack()
+        self.clipboard_cancel_button = Button(self.link_frame, text="Copy Cancel to Clipboard", command=lambda: GUI_MoveViewer.copy_to_clipboard_and_strip(self.cancel_raw.get('1.0', END)))
+        self.clipboard_cancel_button.grid(sticky=N+W, row = 1, column =1)
 
         self.cancel_intr.tag_configure("bold", font="Helvetica 9 bold")
         self.cancel_intr.tag_configure("soulcharge", font="Helvetica 9 bold", foreground='#2C75FF')
+
+        self.link_intr.tag_configure("bold", font="Helvetica 9 bold")
 
 
     def create_window_in_scrollable_viewport(self, master):
@@ -238,6 +253,16 @@ class GUI_MoveViewer:
 
             GUI_MoveViewer.alternating_gray(self.cancel_raw)
             GUI_MoveViewer.alternating_gray(self.cancel_intr)
+
+
+            links = '\n'.join([str(x) for x in move.cancel.links])
+            self.link_intr.delete(1.0, END)
+            self.link_intr.insert(END, links)
+            highlight_tag_and_remove(self.link_intr, '<b>', 'bold')
+
+            self.frame_data_intr.delete(1.0, END)
+            self.frame_data_intr.insert(END, ' | '.join([str(x) for x in move.get_frame_data()]))
+
 
     def load_hitbox(self):
         i = self.hitbox_index

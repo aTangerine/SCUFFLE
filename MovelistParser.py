@@ -1,6 +1,6 @@
 
 '''
-see HowTheMovelistBytesWork.md for a full description of how we're parsing the movelist
+see HowTheMovelistBytesWork.md for a full description of how the movelist is parsed
 '''
 
 
@@ -87,8 +87,10 @@ class Move:
     def get_weight_to_move_id(self, move_id):
         link = self.cancel.get_link_to_move_id(move_id)
         if link == None:
-            return None
+            return None, None
         else:
+            is_block_stun_applied = False
+
             cancel_weight = link.weight
             if len(self.attacks) > 0:
                 startup = self.attacks[0].startup
@@ -96,7 +98,8 @@ class Move:
                 startup = 0
             if link.leave_on > startup:
                 cancel_weight -= startup
-            return cancel_weight
+                is_block_stun_applied = True
+            return cancel_weight, is_block_stun_applied
 
     def get_no_hitbox_startup(self):
         startup = self.cancel.get_fastest_exit(self.total_frames)
@@ -116,6 +119,11 @@ class Move:
 
         tf = self.cancel.get_technical_frames()
 
+        for attack in self.attacks:
+            if attack.physics_grounded[0] > 0:
+                tf.append('GRND')
+                break
+
         for a in self.attacks:
             startup = a.startup
             t = self.total_frames - startup
@@ -126,7 +134,7 @@ class Move:
             counter_stun = a.counter_stun
 
             cl = a.counter_launch
-            c = recovery - counter_stun
+            #c = recovery - counter_stun
 
             attack_type = a.hit_level
             try:
@@ -136,7 +144,7 @@ class Move:
 
             active_frames = a.active - a.startup + 1
 
-            data.append((t, startup + 1, recovery - block_stun, a.hit_launch, recovery - a.hit_stun, cl, c, a.damage, attack_type, active_frames, recovery, tf))
+            data.append((t, startup + 1, block_stun, a.hit_launch, a.hit_stun, cl, counter_stun, a.damage, attack_type, active_frames, recovery, tf))
         return data
 
     def get_gui_guide(self):
@@ -179,14 +187,21 @@ class Attack:
         self.hitbox = b2i(self.bytes, 0) #hitbox limb?? 40 40 = right leg? 80 80 = left leg ??
         self.mystery_02 = b2i(self.bytes, 2) #Counter({128: 125, 0: 43, 17: 21, 2560: 18, 1: 14, 6144: 11, 2048: 10, 512: 10, 2: 9, 6784: 8, 51: 8, 4096: 6, 162: 4, 4608: 4, 34: 4, 513: 4, 640: 3, 641: 3, 3: 2, 129: 2, 3072: 1, 2099: 1})
 
-        self.mystery_08 = b2i(self.bytes, 0x08) # these next 5 turned out to be physics for hit/hit launch/counter/counter launch/aerial/blocking/and grounded
-        self.mystery_20 = b2i(self.bytes, 0x20)
+        #physics is stored as 6 bytes; or 3 2 byte pairs(?) [magnitude, left/right vector, up/down/back/forward vector]
+        #somewhat unclear how the number maps to a direction
+        self.physics_hit_normal = (b2i(self.bytes, 0x08), b2i(self.bytes, 0x0a), b2i(self.bytes, 0x0c))
 
-        self.mystery_24 = b2i(self.bytes, 0x24)
+        self.physics_hit_launch = (b2i(self.bytes, 0x0e), b2i(self.bytes, 0x10), b2i(self.bytes, 0x12))
 
-        self.mystery_26 = b2i(self.bytes, 0x26)
+        self.physics_counter_normal = (b2i(self.bytes, 0x14), b2i(self.bytes, 0x16), b2i(self.bytes, 0x18))
 
-        self.mystery_2A = b2i(self.bytes, 0x2A)
+        self.physics_counter_launch = (b2i(self.bytes, 0x1a), b2i(self.bytes, 0x1c), b2i(self.bytes, 0x1e))
+
+        self.physics_airborne = (b2i(self.bytes, 0x20), b2i(self.bytes, 0x22), b2i(self.bytes, 0x24))
+
+        self.physics_block = (b2i(self.bytes, 0x26), b2i(self.bytes, 0x28), b2i(self.bytes, 0x2a))
+
+        self.physics_grounded = (b2i(self.bytes, 0x2c), b2i(self.bytes, 0x2e), b2i(self.bytes, 0x30))
 
         self.hit_level = b1i(self.bytes, 0x32)
         #0x33?
@@ -244,7 +259,7 @@ class Attack:
 
             (0x04, 0x08, b2i, "???"),
 
-            (0x08, 0x0e, b2i, "physics on hit (pushback)"),
+            (0x08, 0x0e, b2i, "physics on hit (pushback) [magnitude ; left|right ; up|down|forward|back]"),
             (0x0e, 0x14, b2i, "physics on hit (launch distance)"),
             (0x14, 0x1a, b2i, "physics on counter (pushback?)"),
             (0x1a, 0x20, b2i, "physics on counter (launch?)"),
@@ -397,7 +412,7 @@ class Cancel:
                     gi_effective_against += ('H')
                 if vs_v:
                     gi_effective_against += ('V')
-                if vs_k:
+                if vs_k and vs_h: #seems like most kicks are horizontals???
                     gi_effective_against += ('K')
 
                 if type_a == 0x14a:
@@ -449,7 +464,7 @@ class Cancel:
                         state_index = (index - 3) - (second_arg * 3)
                         state = b2i(self.bytes, state_index + 1, big_endian=True)
                         is_soul_charge = False
-                        if state == 0x30CC: #soul charge
+                        if state == 0x30CC: #soul charge, 3018 may be Tira/Gloomy only?
                             is_soul_charge = True
                             state_index = state_index + 3
                             state = b2i(self.bytes, state_index + 1, big_endian=True)
@@ -505,7 +520,8 @@ class Cancel:
 
 
 class Link:
-    def __init__(self, conditions, args, move_id, encoded_move_id, type, sc_only, is_last_call):
+    def __init__(self, cancel_index, conditions, args, move_id, encoded_move_id, type, sc_only, is_last_call):
+        self.cancel_index = cancel_index
         self.conditions = conditions
         self.args = args
         self.move_id = move_id
@@ -525,7 +541,7 @@ class Link:
         com = self.get_command_string()
         pa = Movelist.bytes_as_string(self.args)
         pp = ' ; '.join(['{} [{}]'.format(x[0], Movelist.bytes_as_string(x[1])) for x in self.conditions])
-        return '{} LINK: {} {} out {} in {} ({}) -> [{}]'.format(self.type, self.move_id, com, self.leave_on, self.enter_in, pa,  pp)
+        return '{:04x}: 25 {:02x} LINK: <b>{}<b> {} [o:{} i:{}] RAW: ({}) -> [{}]'.format(self.cancel_index, self.type, self.move_id, com, self.leave_on, self.enter_in, pa,  pp)
 
     def parse_edge(self):
         args_split = []
@@ -543,12 +559,13 @@ class Link:
 
 
         if len(args_split) >= 2:
-            leave_on = args_split[1]
-            enter_in = args_split[0]
+            leave_on = args_split[-1]
+            enter_in = args_split[-2]
 
         self.leave_on = leave_on
         self.enter_in = enter_in
-        self.weight = self.leave_on - self.enter_in
+        #self.weight = self.leave_on - self.enter_in
+        self.weight = self.leave_on
 
     def is_to_attack_or_stance(self, movelist):
         #attacks exist between 256 and the end of the first block in the movelist (block Q)
@@ -573,7 +590,7 @@ class Link:
         else:
             return self.button_press.name
 
-    def get_weight(self):
+    def get_graph_weight(self):
         if self.hold or self.is_button_press():
             return 10
         else:
@@ -602,11 +619,12 @@ class Link:
                                 return PaddedButton.UNK
 
                         if arg_1 == InputType.Hold.value:
-                            if (int(c[index + 3]) == 0x8b):
-                                arg_2 = b2i(c, index + 4, big_endian=True)
                                 if enum_has_value(PaddedButton, arg_2):
                                     self.hold = True
                                     return PaddedButton(arg_2)
+                        if arg_1 == InputType.DoubleTap.value:
+                            if arg_2 == PaddedButton.dd.value:
+                                return PaddedButton(arg_2)
 
                     if (int(c[index + 3]) == 0x8a): #8b 00 05 8a 00 f0 for RE release
                         if arg_1 == 0x0005: #release?
@@ -738,9 +756,9 @@ class Movelist:
             if move_id < len(self.all_moves) and move_id >= 0:
                 for link in self.move_ids_to_cancels[move_id].links:
                     com = link.get_command_string().replace('_', '+')
-                    weight = link.get_weight()
+                    weight = link.get_graph_weight()
                     self.nodes.append((move_id, link.move_id, weight, com))
-                    if link.is_button_press() or link.is_auto_cancel():
+                    if link.is_button_press() or link.is_auto_cancel() or True:
                         ids_to_commands[link.move_id] = com
 
             for cancelable_move_id in ids_to_commands:
@@ -986,13 +1004,13 @@ class Movelist:
                             if b == 0x8b:
                                 state = b2i(args, i + 1, big_endian=True)
                                 ref_state = state
-                                if state == 0x30CC:  # soul charge marker, keep going
+                                if state == 0x30CC or state == 0x3218:  # soul charge marker, keep going 0x3218 may be tira gloomy only??
                                     sc_only = True
                                 else:
                                     state = decode_move_id(state, movelist)
                                     break
 
-                        links.append(Link(conditions, args, state, ref_state, exe_type, sc_only, is_last_call))
+                        links.append(Link(index, conditions, args, state, ref_state, exe_type, sc_only, is_last_call))
                         #print('{} {} {}: ({})'.format(inst, int(bytes[index + 1]), int(bytes[index + 2]), state))
 
                         conditions = []
@@ -1004,6 +1022,28 @@ class Movelist:
                     index += 1
 
             return links
+
+
+    def alt_parse(self, move_id):
+        cancel = self.move_ids_to_cancels[move_id]
+        bytes = cancel.bytes
+
+        sections = []
+        last_slice = bytes.index(b'\x28') + 3
+        print(last_slice)
+        while True:
+            slices = bytes[last_slice:].split(b'\x28')
+            if len(slices) <= 1:
+                break
+            else:
+                slice = slices[1]
+            goto = b2i(slice, 0, big_endian=True)
+            sections.append((last_slice, bytes[last_slice:goto]))
+            last_slice = goto
+
+        for goto, s in sections:
+            print('{:04x}: {}'.format(goto, Movelist.bytes_as_string(s)))
+
 
 
 
@@ -1086,6 +1126,7 @@ if __name__ == "__main__":
     #movelists = [Movelist.from_file('movelists/ivy_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/geralt_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/siegfried_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/voldo_movelist.m0000')]
 
     #for movelist in movelists:
 
@@ -1093,12 +1134,18 @@ if __name__ == "__main__":
     #movelists[0].print_move_id_details(292)
     #movelists[0].print_move_id_details(285)
     #movelists[0].print_move_id_details(259)
-    for link in movelists[0].move_ids_to_cancels[440].links:
+    for link in movelists[0].move_ids_to_cancels[265].links:
         #if link.is_to_attack_or_stance(movelists[0]):
         print(link)
 
+    for cancel in movelists[0].move_ids_to_cancels.values():
+        for link in cancel.links:
+            if link.move_id == 532:
+                print(cancel.move_id)
+                print(link)
 
-    true_counter = 0
+
+    '''true_counter = 0
     total_counter = 0
     for move in movelists[0].all_moves:
         if move.cancel.move_id > 0xff and move.cancel.move_id < movelists[0].block_Q_length:
@@ -1110,27 +1157,9 @@ if __name__ == "__main__":
     print('{}/{}'.format(true_counter, total_counter))
 
     for cancel in sorted(movelists[0].move_ids_to_cancels.values(), key=lambda x: x.type):
+        if cancel.type > 1:
+            print('{} : {} : 0x{:04x}'.format(cancel.type, cancel.move_id, encode_move_id(cancel.move_id, movelists[0])))'''
 
-        splits = cancel.bytes.split(b'\x8b\x30\x64')
-        if len(splits) > 1:
-            for split in splits[1:]:
-                #try:
-                type_a = b2i(split, 1, big_endian=True)
-                start = b2i(split, 4, big_endian=True)
-                stop = b2i(split, 7, big_endian=True)
-                type_2 = b2i(split, 10, big_endian=True)
-                try:
-                    com = movelists[0].move_ids_to_commands[cancel.move_id]
-                except:
-                    com = '??'
-                print('{} : {} : {} : {} : {} : {}'.format(com, cancel.move_id, type_a, start, stop, type_2))
-                #except:
-                    #print('!! {} !! '.format(cancel.move_id))
-
-
-
-        #if cancel.type > 1:
-            #print('{} : {} : 0x{:04x}'.format(cancel.type, cancel.move_id, encode_move_id(cancel.move_id, movelists[0])))
-
+    #movelists[0].alt_parse(2345)
 
 

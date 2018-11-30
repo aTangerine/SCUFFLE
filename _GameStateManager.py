@@ -11,6 +11,8 @@ class GameStateManager:
         #self.p2_backfiller = FrameBackCounter(False)
         self.move_ids_record = [[], []]
         self.bhc_stuns_record = [[], []]
+        self.entry_times = [[], []]
+        self.time_spent_in_move_id_count = [[], []]
 
     def Update(self, do_print_debug_vars, show_all_hitboxes):
         successful_update = self.game_reader.UpdateCurrentSnapshot()
@@ -23,10 +25,11 @@ class GameStateManager:
                     self.p1_move_id = snapshots[-1].p1.movement_block.movelist_id
                     did_p1_attack_change = snapshots[-2].p1.movement_block.movelist_id != snapshots[-3].p1.movement_block.movelist_id
                     if did_p1_attack_change:
-                        t, s = self.create_frame_entry('p1', snapshots[-1].p1, self.move_ids_record[0], self.bhc_stuns_record[0], self.game_reader.p1_movelist)
-                        if t != None:
-                            pass
-                            #self.p1_backfiller.reset(t, 4, snapshots)
+                        old_id = snapshots[-3].p1.movement_block.movelist_id
+                        self.count_time_in_move_id(self.time_spent_in_move_id_count[0], old_id, snapshots, True)
+
+                        s = self.create_frame_entry('p1', snapshots[-1].p1, self.move_ids_record[0], self.bhc_stuns_record[0], self.entry_times[0], self.game_reader.p1_movelist)
+
                         if s != None:
                             for entry in s:
                                 print(entry)
@@ -37,10 +40,10 @@ class GameStateManager:
                     #did_p2_attack_change = snapshots[-1].p2.global_block.last_attack_address != snapshots[-2].p2.global_block.last_attack_address
                     did_p2_attack_change = snapshots[-2].p2.movement_block.movelist_id != snapshots[-3].p2.movement_block.movelist_id
                     if did_p2_attack_change:
-                        t, s = self.create_frame_entry('p2', snapshots[-1].p2, self.move_ids_record[1],self.bhc_stuns_record[1], self.game_reader.p2_movelist)
-                        if t != None:
-                            pass
-                            #self.p2_backfiller.reset(t, 4, snapshots)
+                        old_id = snapshots[-3].p2.movement_block.movelist_id
+                        self.count_time_in_move_id(self.time_spent_in_move_id_count[1], old_id, snapshots, False)
+                        s = self.create_frame_entry('p2', snapshots[-1].p2, self.move_ids_record[1],self.bhc_stuns_record[1], self.entry_times[1], self.game_reader.p2_movelist)
+
                         if s != None:
                             for entry in s:
                                 print(entry)
@@ -54,28 +57,76 @@ class GameStateManager:
                 print(e)
                 raise e
 
-    def create_frame_entry(self, name, p, record, bhc_stuns, movelist):
+    def count_time_in_move_id(self, count_list, move_id, snapshots, is_p1 = True):
+        found_move_id = False
+        move_id_changed = False
+
+        start_time = 0
+        stop_time = 0
+        i = 0
+        while i < len(snapshots) and not move_id_changed:
+            if is_p1:
+                next_move_id = snapshots[-i].p1.movement_block.movelist_id
+            else:
+                next_move_id = snapshots[-i].p2.movement_block.movelist_id
+            if not found_move_id and move_id == next_move_id:
+                start_time = snapshots[-i].timer
+                found_move_id = True
+
+            if found_move_id and move_id != next_move_id:
+                stop_time = snapshots[-i].timer
+                move_id_changed = True
+            i += 1
+
+        if start_time == 0 or stop_time == 0:
+            count = 0
+        else:
+            count = start_time - stop_time
+
+        count_list.append((move_id, count))
+        #print(count_list[-1])
+        while len(count_list) > 10:
+            count_list.pop(0)
+
+
+    def create_frame_entry(self, name, p, record, bhc_stuns, times, movelist):
         id = p.movement_block.movelist_id
         record.append(id)
-        bhc_stuns.append((0, 0, 0))
+        #bhc_stuns.append((0, 0, 0))
         #if id != 0x59 and id <= movelist.block_Q_length:  # 0x59 is the 'coming to a stop' move_id from 8 way run and above q_length are 'imaginary' moves
         if (id > 0x0100 and id <= movelist.block_Q_length) or id == 212: #212 is soul charge, the only interesting move below 0x0100
-                id, b, h, c, t, rec, s = GameStateManager.FrameStringFromMovelist(name, p, movelist, record, bhc_stuns)
-                bhc_stuns[-1] = ((-1 * (b - rec), -1 * (h - rec), -1 * (c - rec)))
-                return t, s
-        if len(record) > 10:
+                if len(bhc_stuns) > 1:
+                    stun = bhc_stuns[-1] #declare here in case we add a new one in FrameStringFromMovelist
+                s = GameStateManager.FrameStringFromMovelist(name, p, record, bhc_stuns, self.game_reader.snapshots[-1].timer)
+                #times.append(self.game_reader.timer - p.movement_block.short_timer)
+                times.append(self.game_reader.timer)
+                if len(times) > 1 and len(bhc_stuns) > 2:
+                    #delta = times[-1] - times[-2]
+                    delta = times[-1] - stun[4]
+                    delta -= stun[3]
+                    #print(stun)
+                    #print('d{}({}) | {} | {} | {}'.format(delta, delta + stun[3], delta - stun[0], delta - stun[1], delta - stun[2]))
+
+                return s
+        while len(record) > 10:
             record.pop(0)
+
+        while len(times) > 10:
+            times.pop(0)
+
+        while len(bhc_stuns) > 10:
             bhc_stuns.pop(0)
-        return None, None
 
-    def FrameStringFromMovelist(p_str, p : SoulCaliburGameState.PlayerSnapshot, movelist, move_ids, stuns):
+        return None
 
-        def pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act, tf):
+    def FrameStringFromMovelist(p_str, p : SoulCaliburGameState.PlayerSnapshot, move_ids, stuns, timer):
+
+        def pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act, rec, tf):
             if cl == hl and c == h:
                 cl = ''
                 c = ''
             else:
-                c = FrameAnalyzer.StringifyAdvantage(c)
+                c = FrameAnalyzer.StringifyAdvantage(rec - c)
 
             str = "FDO:{}:{:^3}|{:^7}|{:^4}|{:^2}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|{}".format(
                 p_str,
@@ -83,8 +134,8 @@ class GameStateManager:
                 p.movelist.get_command_by_move_id(id)[-7:],
                 s,
                 at,
-                '{}'.format(FrameAnalyzer.StringifyAdvantage(b)),
-                '{} {}'.format(hl, FrameAnalyzer.StringifyAdvantage(h)),
+                '{}'.format(FrameAnalyzer.StringifyAdvantage(rec - b)),
+                '{} {}'.format(hl, FrameAnalyzer.StringifyAdvantage(rec - h)),
                 '{} {}'.format(cl, c),
                 d,
                 p.startup_block.guard_damage,
@@ -95,24 +146,13 @@ class GameStateManager:
             strings.append(str)
 
         def no_hitbox_data():
-            t, s, b, hl, h, cl, c, d, at, act, rec, tf = (0, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 0, [''])
-            #s = p.movelist.all_moves[id].get_no_hitbox_startup()
+            t, s, b, hl, h, cl, c, d, at, act, rec, tf = (0, 0, 0, ' ', 0, ' ', 0, ' ', ' ', ' ', 0, [''])
+
             if move_ids[-1] >= 0 and move_ids[-1] < len(p.movelist.all_moves):
-                #weight = p.movelist.all_moves[previous_move_id[-1]].get_weight_to_move_id(id)
-                weight, b, h, c = FrameAnalyzer.CalculateCarriedAdvantage(movelist, move_ids, stuns)
-
-                b -= weight
-                h -= weight
-                c -= weight
-
-                b *= -1
-                h *= -1
-                c *= -1
-
                 tf = p.movelist.all_moves[move_ids[-1]].cancel.get_technical_frames()
 
-            pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act, tf)
-            return id, b, h, c, t, rec, strings
+            pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act, rec, tf)
+            return strings
 
 
 
@@ -128,10 +168,14 @@ class GameStateManager:
             if len(frame_datas) == 0:
                 return no_hitbox_data()
             else:
+                added_stun = False
                 for frame_data in frame_datas:
                     t, s, b, hl, h, cl, c, d, at, act, rec, tf = frame_data
-                    pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act, tf)
-                return id, b, h, c, t, rec, strings
+                    if not added_stun:
+                        stuns.append((b, h, c, s, timer))
+                        added_stun = True
+                    pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act, rec, tf)
+                return strings
 
 
 
@@ -194,16 +238,21 @@ class FrameAnalyzer:
 
     def CalculateCarriedAdvantage(movelist, move_ids, stuns):
         weights = []
+        apply_blockstuns = []
         for i, move_id in enumerate(move_ids):
             if move_id < len(movelist.all_moves) and move_id >= 0:
                 if i < len(move_ids) - 1:
-                    weight = movelist.all_moves[move_id].get_weight_to_move_id(move_ids[i + 1])
+                    weight, is_block_stun_applied = movelist.all_moves[move_id].get_weight_to_move_id(move_ids[i + 1])
                     weights.append(weight)
+                    apply_blockstuns.append(is_block_stun_applied)
                 else:
                     weight = movelist.all_moves[move_id].get_no_hitbox_startup()
                     weights.append(weight)
+                    apply_blockstuns.append(False)
+                    #weights.append(weight)
             else:
                 weights.append(None)
+                apply_blockstuns.append(False)
 
         current_balance = 0
         current_stun = ((0, 0, 0))
@@ -216,11 +265,17 @@ class FrameAnalyzer:
                 current_balance += weight
             else:
                 break
-            if stun != (0, 0, 0):
+            if apply_blockstuns[-i] and stun != (0, 0, 0):
+                #print(stun)
                 current_stun = stun
                 break
 
-        return (current_balance, ) + current_stun
+        #print(current_balance)
+        #print(current_stun)
+        #print(weights)
+        tuple =(current_balance, ) + current_stun
+        #print(tuple)
+        return tuple
 
 
 

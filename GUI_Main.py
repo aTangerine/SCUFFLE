@@ -14,6 +14,7 @@ from enum import Enum
 import VersionChecker
 import webbrowser
 import GUI_MoveViewer
+import GUI_MoveIdMeter
 
 class GUI_Main(Tk):
     def __init__(self):
@@ -63,6 +64,9 @@ class GUI_Main(Tk):
 
         self.move_viewer = None
         self.tekken_bot_menu.add_command(label="Launch Move Viewer", command=self.launch_move_viewer)
+
+        self.move_id_ometer = None
+        self.tekken_bot_menu.add_command(label="Launch Move-Id-Ometer", command=self.launch_move_id_ometer)
 
         self.do_show_all_hitbox_data = BooleanVar()
         self.do_show_all_hitbox_data.set(False)
@@ -154,6 +158,12 @@ class GUI_Main(Tk):
         except Exception as e:
             print(e)
 
+    def launch_move_id_ometer(self):
+        if self.move_id_ometer != None:
+            self.move_id_ometer.master.destroy()
+            self.move_id_ometer = None
+        self.move_id_ometer = GUI_MoveIdMeter.GUI_MoveIdMeter(Toplevel(self))
+
     def add_checkbox(self, menu, lookup_key, display_string, default_value, button_command):
         var = BooleanVar()
         var.set(default_value)
@@ -224,11 +234,22 @@ class GUI_Main(Tk):
             self.overlay.update_location()
             if successful_update:
                 self.overlay.update_state()
+
+        if self.move_id_ometer != None:
+            try:
+                self.move_id_ometer.update_meter(self.launcher)
+            except Exception as e: #grabs window close errors (and everything else too oh god)
+                self.move_id_ometer = None
+                print('Move-Id-Ometer update loop : {}'.format(e))
+
+
+
         #self.graph.update_state()
         time2 = time.time()
         elapsed_time = 1000 * (time2 - time1)
 
         if self.launcher.game_reader.HasWorkingPID():
+            #Update Move Viewer
             if self.previous_working_pid == 10: #arbitrary number
                 if self.move_viewer != None:
                     movelist = self.launcher.game_reader.p1_movelist
@@ -237,6 +258,7 @@ class GUI_Main(Tk):
                         self.previous_working_pid += 1
             else:
                 self.previous_working_pid += 1
+
             self.after(max(2, 8 - int(round(elapsed_time))), self.update_launcher)
         else:
             self.previous_working_pid = 0

@@ -36,6 +36,8 @@ p2_movelist_address = 0x14463F6D0 #other starting bytes available in /movelists 
 
 MOVELIST_BYTES = 0x150000 #memory allocated for movelist,
 
+global_timer_address = 0x14463E700 #there's a bunch of these, 4 bytes ; should go up until training mode is reset (goes to 0).
+
 #p1_last_move_address = 0x1445A7460 #xianghua's 5k : 40 50 11 00 00 00 00 00 64 00 00 00 00 00 64 00 00 00 00 00 64 00 00 00 00 00 64 00 00 00 00 00 50 00 00 00 B0 FF 6E 00
 #p2_last_move_address = 0x14463E170
 

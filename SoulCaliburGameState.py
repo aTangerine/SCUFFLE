@@ -13,6 +13,7 @@ class SC6GameReader:
             self.snapshots = []
             self.p1_movelist = None
             self.p2_movelist = None
+            self.timer = 0
 
         def IsForegroundPID(self):
             pid = c.wintypes.DWORD()
@@ -71,6 +72,14 @@ class SC6GameReader:
                         else:
                             return False
 
+                    new_timer = GetValueFromAddress(process_handle, AddressMap.global_timer_address)
+
+                    if self.timer == new_timer:
+                        return False
+                    else:
+                        self.timer = new_timer
+
+
                     p1_startup_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p1_startup_block_breadcrumb, 0x100)
                     p2_startup_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p2_startup_block_breadcrumb, 0x100)
 
@@ -95,14 +104,13 @@ class SC6GameReader:
 
 
 
-                    if (len(self.snapshots) == 0) or (value_p1.movement_block.short_timer != self.snapshots[-1].p1.movement_block.short_timer):
-                        self.snapshots.append(GameSnapshot(value_p1, value_p2))
-                        MAX_FRAMES_TO_KEEP = 1000
-                        if len(self.snapshots) > MAX_FRAMES_TO_KEEP:
-                            self.snapshots = self.snapshots[MAX_FRAMES_TO_KEEP // 2: -1]
-                        return True
-                    else:
-                        return False
+                    #if (len(self.snapshots) == 0) or (value_p1.movement_block.short_timer != self.snapshots[-1].p1.movement_block.short_timer):
+                    self.snapshots.append(GameSnapshot(value_p1, value_p2, self.timer))
+                    MAX_FRAMES_TO_KEEP = 1000
+                    if len(self.snapshots) > MAX_FRAMES_TO_KEEP:
+                        self.snapshots = self.snapshots[MAX_FRAMES_TO_KEEP // 2: -1]
+                    return True
+
 
 
 class SC6MovementBlock:
@@ -251,7 +259,8 @@ class PlayerSnapshot:
 
 
 class GameSnapshot:
-    def __init__(self, p1_snapshot : PlayerSnapshot, p2_snapshot : PlayerSnapshot):
+    def __init__(self, p1_snapshot : PlayerSnapshot, p2_snapshot : PlayerSnapshot, timer):
+        self.timer = timer
         self.p1 = p1_snapshot
         self.p2 = p2_snapshot
 

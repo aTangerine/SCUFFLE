@@ -43,6 +43,7 @@ class PaddedButton(Enum):
     b = 0x002e
     h = 0x001b
     #c =
+    dd = 0x0054
 
 class InputType(Enum):
     Press = 0x06
@@ -56,6 +57,7 @@ class InputType(Enum):
 
     OnContact = 0x0B #counter hit uses the same code signature but are about 3x as long so the counterhit part must be in there somewhere
 
+    DoubleTap = 0x2C
 
     #PressDown = 0x13af /0x13ae ??
     #PressBack =  0x0002 /0x1002 ??

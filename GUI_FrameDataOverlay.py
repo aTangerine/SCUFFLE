@@ -53,8 +53,8 @@ class TextRedirector(object):
     def __init__(self, stdout, widget, style, fa_p1_var, fa_p2_var):
         self.KEY = 'FDO:'
         self.NOTE = 'NOTE:'
-        self.p1_note = '*'
-        self.p2_note = '^'
+        self.p1_note = ''
+        self.p2_note = ''
 
         self.stdout = stdout
         self.widget = widget
