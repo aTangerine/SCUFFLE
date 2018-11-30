@@ -4,7 +4,7 @@
     <CheatEntry>
       <ID>26</ID>
       <Description>"p2 move properties locale"</Description>
-      <LastState Value="97 80 78 16" RealAddress="516DEE38"/>
+      <LastState Value="10 80 00 08" RealAddress="54FF4638"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>Array of byte</VariableType>
       <ByteLength>4</ByteLength>
@@ -19,7 +19,7 @@
     <CheatEntry>
       <ID>21</ID>
       <Description>"p1 move flag????"</Description>
-      <LastState Value="00 01 00 A9" RealAddress="516DEB83"/>
+      <LastState Value="02 B2 02 F8" RealAddress="54FF4F83"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>Array of byte</VariableType>
       <ByteLength>4</ByteLength>
@@ -34,7 +34,7 @@
     <CheatEntry>
       <ID>28</ID>
       <Description>"p1 move properties locale"</Description>
-      <LastState Value="10 05 80 00" RealAddress="516DEB38"/>
+      <LastState Value="C0 F0 33 00" RealAddress="54FF4F38"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>Array of byte</VariableType>
       <ByteLength>4</ByteLength>
@@ -49,7 +49,6 @@
     <CheatEntry>
       <ID>78</ID>
       <Description>"start of move list???"</Description>
-      <LastState Value="240 15 30 227 0 0 0 0" RealAddress="4A500000"/>
       <VariableType>Array of byte</VariableType>
       <ByteLength>8</ByteLength>
       <Address>4A500000</Address>
@@ -65,7 +64,7 @@
     <CheatEntry>
       <ID>79</ID>
       <Description>"p1 move list??"</Description>
-      <LastState Value="000000003131484B" RealAddress="43740000"/>
+      <LastState Value="000000003131484B" RealAddress="48F70000"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>8 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+045A89C0</Address>
@@ -87,7 +86,7 @@
     <CheatEntry>
       <ID>81</ID>
       <Description>"p2 move list?"</Description>
-      <LastState Value="000000003131484B" RealAddress="43740000"/>
+      <LastState Value="000000003131484B" RealAddress="48F70000"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>8 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+0463F6D0</Address>
@@ -120,7 +119,7 @@
     <CheatEntry>
       <ID>10</ID>
       <Description>"p2 health"</Description>
-      <LastState Value="240" RealAddress="516DEE10"/>
+      <LastState Value="240" RealAddress="54FF4610"/>
       <VariableType>Float</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -133,7 +132,7 @@
     <CheatEntry>
       <ID>7</ID>
       <Description>"p1 health"</Description>
-      <LastState Value="240" RealAddress="516DEB10"/>
+      <LastState Value="240" RealAddress="54FF4F10"/>
       <VariableType>Float</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -146,7 +145,7 @@
     <CheatEntry>
       <ID>53</ID>
       <Description>"p1 alt (float) frame completion time"</Description>
-      <LastState Value="52" RealAddress="5C1EC0CC"/>
+      <LastState Value="155" RealAddress="5AD24BEC"/>
       <VariableType>Float</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -160,7 +159,7 @@
     <CheatEntry>
       <ID>52</ID>
       <Description>"p1 alt (float) frame counter"</Description>
-      <LastState Value="51.89999771" RealAddress="5C1EC0C8"/>
+      <LastState Value="155" RealAddress="5AD24BE8"/>
       <VariableType>Float</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -174,7 +173,7 @@
     <CheatEntry>
       <ID>54</ID>
       <Description>"p1 alt (float) 1 frame off frame counter"</Description>
-      <LastState Value="50.89999771" RealAddress="5C1EC0D0"/>
+      <LastState Value="154" RealAddress="5AD24BF0"/>
       <VariableType>Float</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -188,7 +187,7 @@
     <CheatEntry>
       <ID>57</ID>
       <Description>"p2 alt (float) frame completion time"</Description>
-      <LastState Value="30" RealAddress="5F05D0BC"/>
+      <LastState Value="155" RealAddress="4BF25BDC"/>
       <VariableType>Float</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -202,14 +201,14 @@
     <CheatEntry>
       <ID>75</ID>
       <Description>"p1 total animation frames"</Description>
-      <LastState Value="52" RealAddress="1445A7D80"/>
+      <LastState Value="155" RealAddress="1445A7D80"/>
       <VariableType>Float</VariableType>
       <Address>SoulcaliburVI.exe+45A7D80</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>56</ID>
       <Description>"p2 alt (float) frame counter"</Description>
-      <LastState Value="30" RealAddress="5F05D0B8"/>
+      <LastState Value="155" RealAddress="4BF25BD8"/>
       <VariableType>Float</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -223,14 +222,14 @@
     <CheatEntry>
       <ID>87</ID>
       <Description>"p2 total animation frames"</Description>
-      <LastState Value="40" RealAddress="14463EA90"/>
+      <LastState Value="155" RealAddress="14463EA90"/>
       <VariableType>Float</VariableType>
       <Address>SoulcaliburVI.exe+463EA90</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>18</ID>
       <Description>"p1 unkown + 0x0C"</Description>
-      <LastState Value="121" RealAddress="614ED7CC"/>
+      <LastState Value="109" RealAddress="8DE54BCC"/>
       <VariableType>Float</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -244,7 +243,7 @@
     <CheatEntry>
       <ID>55</ID>
       <Description>"p1 alt (float) mystery scalar (1.0+-)"</Description>
-      <LastState Value="1" RealAddress="5C1EC0D8"/>
+      <LastState Value="1" RealAddress="5AD24BF8"/>
       <VariableType>Float</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -265,7 +264,7 @@
     <CheatEntry>
       <ID>76</ID>
       <Description>"p1 alt  countdown?????"</Description>
-      <LastState Value="0.06666671485" RealAddress="5C1EC0C0"/>
+      <LastState Value="0.9500001669" RealAddress="5AD24BE0"/>
       <VariableType>Float</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -286,7 +285,7 @@
     <CheatEntry>
       <ID>115</ID>
       <Description>"No description"</Description>
-      <LastState Value="0000000043740000" RealAddress="1445A89C0"/>
+      <LastState Value="0000000048F70000" RealAddress="1445A89C0"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>8 Bytes</VariableType>
       <Address>SoulcaliburVI.exe+45A89C0</Address>
@@ -294,7 +293,7 @@
     <CheatEntry>
       <ID>63</ID>
       <Description>"p2 base address resolved"</Description>
-      <LastState Value="00000000516DEE00" RealAddress="516DEE00"/>
+      <LastState Value="0000000054FF4600" RealAddress="54FF4600"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>8 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
@@ -308,7 +307,7 @@
     <CheatEntry>
       <ID>62</ID>
       <Description>"p1 base address resolved"</Description>
-      <LastState Value="00000000516DEB00" RealAddress="516DEB00"/>
+      <LastState Value="0000000054FF4F00" RealAddress="54FF4F00"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>8 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
@@ -322,7 +321,7 @@
     <CheatEntry>
       <ID>15</ID>
       <Description>"p2 base address"</Description>
-      <LastState Value="00000000516DEE00" RealAddress="7E87E420"/>
+      <LastState Value="0000000054FF4600" RealAddress="5B88D070"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>8 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
@@ -335,7 +334,7 @@
     <CheatEntry>
       <ID>1</ID>
       <Description>"p1 base address"</Description>
-      <LastState Value="00000000516DEB00" RealAddress="7E87E410"/>
+      <LastState Value="0000000054FF4F00" RealAddress="5B88D060"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>8 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
@@ -362,7 +361,7 @@
     <CheatEntry>
       <ID>50</ID>
       <Description>"p2 move id"</Description>
-      <LastState Value="65535" RealAddress="614ED66C"/>
+      <LastState Value="65535" RealAddress="388AAAAC"/>
       <VariableType>4 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -376,7 +375,7 @@
     <CheatEntry>
       <ID>51</ID>
       <Description>"p1 move id "</Description>
-      <LastState Value="65535" RealAddress="614ED82C"/>
+      <LastState Value="65535" RealAddress="8DE54C2C"/>
       <VariableType>4 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -390,7 +389,7 @@
     <CheatEntry>
       <ID>49</ID>
       <Description>"p2 altmoveid"</Description>
-      <LastState Value="2047" RealAddress="5F05D0A4"/>
+      <LastState Value="2047" RealAddress="4BF25BC4"/>
       <VariableType>4 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -404,7 +403,7 @@
     <CheatEntry>
       <ID>46</ID>
       <Description>"p1 alt moveid"</Description>
-      <LastState Value="2047" RealAddress="5C1EC0B4"/>
+      <LastState Value="2047" RealAddress="5AD24BD4"/>
       <VariableType>4 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -418,7 +417,7 @@
     <CheatEntry>
       <ID>14</ID>
       <Description>"p1 current frame count"</Description>
-      <LastState Value="53" RealAddress="614ED830"/>
+      <LastState Value="20" RealAddress="8DE54C30"/>
       <VariableType>4 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -432,7 +431,7 @@
     <CheatEntry>
       <ID>13</ID>
       <Description>"p2 current frame count"</Description>
-      <LastState Value="40" RealAddress="614ED670"/>
+      <LastState Value="14" RealAddress="388AAAB0"/>
       <VariableType>4 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -446,7 +445,7 @@
     <CheatEntry>
       <ID>42</ID>
       <Description>"p2 current frame count (resets to zero?)"</Description>
-      <LastState Value="0" RealAddress="614ED6C4"/>
+      <LastState Value="0" RealAddress="388AAB04"/>
       <VariableType>4 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -460,7 +459,7 @@
     <CheatEntry>
       <ID>17</ID>
       <Description>"p2 movement type"</Description>
-      <LastState Value="0" RealAddress="614ED604"/>
+      <LastState Value="0" RealAddress="388AAA44"/>
       <VariableType>4 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -474,7 +473,7 @@
     <CheatEntry>
       <ID>4</ID>
       <Description>"p2 _pointer dest"</Description>
-      <LastState Value="0" RealAddress="614ED600"/>
+      <LastState Value="0" RealAddress="388AAA40"/>
       <VariableType>4 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -488,7 +487,7 @@
     <CheatEntry>
       <ID>43</ID>
       <Description>"p1 current frame count (resets to zero?)"</Description>
-      <LastState Value="0" RealAddress="614ED884"/>
+      <LastState Value="0" RealAddress="8DE54C84"/>
       <VariableType>4 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -502,7 +501,7 @@
     <CheatEntry>
       <ID>16</ID>
       <Description>"p1 movement type"</Description>
-      <LastState Value="0" RealAddress="614ED7C4"/>
+      <LastState Value="0" RealAddress="8DE54BC4"/>
       <VariableType>4 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -516,7 +515,7 @@
     <CheatEntry>
       <ID>12</ID>
       <Description>"p1 _pointer dest"</Description>
-      <LastState Value="0" RealAddress="614ED7C0"/>
+      <LastState Value="0" RealAddress="8DE54BC0"/>
       <VariableType>4 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -551,7 +550,7 @@
     <CheatEntry>
       <ID>89</ID>
       <Description>"p2 current attack address"</Description>
-      <LastState Value="00000000" RealAddress="14463E170"/>
+      <LastState Value="48FA4AB8" RealAddress="14463E170"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>4 Bytes</VariableType>
       <Address>SoulcaliburVI.exe+463E170</Address>
@@ -559,7 +558,7 @@
     <CheatEntry>
       <ID>83</ID>
       <Description>"p1 current attack address"</Description>
-      <LastState Value="43773730" RealAddress="1445A7460"/>
+      <LastState Value="48FA6098" RealAddress="1445A7460"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>4 Bytes</VariableType>
       <Address>SoulcaliburVI.exe+45A7460</Address>
@@ -567,7 +566,7 @@
     <CheatEntry>
       <ID>61</ID>
       <Description>"p2 base object"</Description>
-      <LastState Value="60928" RealAddress="7E87E420"/>
+      <LastState Value="17920" RealAddress="5B88D070"/>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -579,7 +578,7 @@
     <CheatEntry>
       <ID>60</ID>
       <Description>"p1 base object"</Description>
-      <LastState Value="60160" RealAddress="7E87E410"/>
+      <LastState Value="20224" RealAddress="5B88D060"/>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -591,7 +590,7 @@
     <CheatEntry>
       <ID>59</ID>
       <Description>"p2 startup???"</Description>
-      <LastState Value="15037" RealAddress="516DEE44"/>
+      <LastState Value="17" RealAddress="54FF4644"/>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -604,7 +603,7 @@
     <CheatEntry>
       <ID>34</ID>
       <Description>"p1 move type????"</Description>
-      <LastState Value="2121" RealAddress="516DEB40"/>
+      <LastState Value="19" RealAddress="54FF4F40"/>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -617,7 +616,7 @@
     <CheatEntry>
       <ID>29</ID>
       <Description>"p1 end active frames?"</Description>
-      <LastState Value="15" RealAddress="516DEB46"/>
+      <LastState Value="28" RealAddress="54FF4F46"/>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -630,7 +629,7 @@
     <CheatEntry>
       <ID>27</ID>
       <Description>"p1 startup???"</Description>
-      <LastState Value="13" RealAddress="516DEB44"/>
+      <LastState Value="27" RealAddress="54FF4F44"/>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -643,7 +642,7 @@
     <CheatEntry>
       <ID>31</ID>
       <Description>"p1 move properties locale"</Description>
-      <LastState Value="13" RealAddress="516DEB44"/>
+      <LastState Value="27" RealAddress="54FF4F44"/>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -656,7 +655,7 @@
     <CheatEntry>
       <ID>67</ID>
       <Description>"p1 counter stun???"</Description>
-      <LastState Value="30" RealAddress="516DEB7E"/>
+      <LastState Value="28" RealAddress="54FF4F7E"/>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -669,7 +668,7 @@
     <CheatEntry>
       <ID>68</ID>
       <Description>"p1 hit stun???"</Description>
-      <LastState Value="30" RealAddress="516DEB7C"/>
+      <LastState Value="28" RealAddress="54FF4F7C"/>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -682,7 +681,7 @@
     <CheatEntry>
       <ID>65</ID>
       <Description>"p1 block stun???"</Description>
-      <LastState Value="22" RealAddress="516DEB80"/>
+      <LastState Value="24" RealAddress="54FF4F80"/>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -695,7 +694,7 @@
     <CheatEntry>
       <ID>33</ID>
       <Description>"p1 guard impact ???????????"</Description>
-      <LastState Value="4" RealAddress="516DEBA8"/>
+      <LastState Value="22" RealAddress="54FF4FA8"/>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -708,7 +707,7 @@
     <CheatEntry>
       <ID>32</ID>
       <Description>"p1 move damage"</Description>
-      <LastState Value="10" RealAddress="516DEB48"/>
+      <LastState Value="22" RealAddress="54FF4F48"/>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -721,7 +720,7 @@
     <CheatEntry>
       <ID>96</ID>
       <Description>"p1 move tip(?) damage"</Description>
-      <LastState Value="10" RealAddress="516DEB48"/>
+      <LastState Value="22" RealAddress="54FF4F48"/>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -734,7 +733,7 @@
     <CheatEntry>
       <ID>30</ID>
       <Description>"p1 clash???"</Description>
-      <LastState Value="10" RealAddress="516DEB48"/>
+      <LastState Value="22" RealAddress="54FF4F48"/>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
       <Offsets>
@@ -754,7 +753,7 @@
     <CheatEntry>
       <ID>109</ID>
       <Description>"p1 attack weight"</Description>
-      <LastState Value="0001" RealAddress="516DEB56"/>
+      <LastState Value="0036" RealAddress="54FF4F56"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>2 Bytes</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
@@ -838,14 +837,14 @@
     <CheatEntry>
       <ID>73</ID>
       <Description>"No description"</Description>
-      <LastState Value="0" RealAddress="3326EC02"/>
+      <LastState Value="49152" RealAddress="3326EC02"/>
       <VariableType>2 Bytes</VariableType>
       <Address>3326EC02</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>74</ID>
       <Description>"No description"</Description>
-      <LastState Value="0" RealAddress="3326EC02"/>
+      <LastState Value="49152" RealAddress="3326EC02"/>
       <VariableType>2 Bytes</VariableType>
       <Address>3326EC02</Address>
     </CheatEntry>
@@ -866,21 +865,20 @@
     <CheatEntry>
       <ID>116</ID>
       <Description>"No description"</Description>
-      <LastState Value="254" RealAddress="4A66B6B0"/>
       <VariableType>Byte</VariableType>
       <Address>4A66B6B0</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>72</ID>
       <Description>"mystery move byte"</Description>
-      <LastState Value="17" RealAddress="14455C040"/>
+      <LastState Value="183" RealAddress="14455C040"/>
       <VariableType>Byte</VariableType>
       <Address>14455C040</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>90</ID>
       <Description>"p1 launch type"</Description>
-      <LastState Value="08" RealAddress="516DEB41"/>
+      <LastState Value="00" RealAddress="54FF4F41"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>Byte</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
@@ -894,7 +892,7 @@
     <CheatEntry>
       <ID>93</ID>
       <Description>"p1 launch type"</Description>
-      <LastState Value="00" RealAddress="516DEB83"/>
+      <LastState Value="02" RealAddress="54FF4F83"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>Byte</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
@@ -915,34 +913,32 @@
     <CheatEntry>
       <ID>120</ID>
       <Description>"No description"</Description>
-      <LastState Value="0" RealAddress="4A66BCD0"/>
       <VariableType>Byte</VariableType>
       <Address>4A66BCD0</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>112</ID>
       <Description>"No description"</Description>
+      <LastState Value="32" RealAddress="0DD64A00"/>
       <VariableType>Byte</VariableType>
       <Address>0DD64A00</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>117</ID>
       <Description>"No description"</Description>
-      <LastState Value="0" RealAddress="4A66BCBF"/>
       <VariableType>Byte</VariableType>
       <Address>4A66BCBF</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>118</ID>
       <Description>"No description"</Description>
-      <LastState Value="0" RealAddress="4A66BCC0"/>
       <VariableType>Byte</VariableType>
       <Address>4A66BCC0</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>91</ID>
       <Description>"p1 launch type other byte"</Description>
-      <LastState Value="01" RealAddress="516DEB82"/>
+      <LastState Value="B2" RealAddress="54FF4F82"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>Byte</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
@@ -956,7 +952,7 @@
     <CheatEntry>
       <ID>69</ID>
       <Description>"p1 hit type (high/low/mid)"</Description>
-      <LastState Value="49" RealAddress="516DEB40"/>
+      <LastState Value="13" RealAddress="54FF4F40"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>Byte</VariableType>
       <Address>"SoulcaliburVI.exe"+03EC14D0</Address>
@@ -970,10 +966,52 @@
     <CheatEntry>
       <ID>121</ID>
       <Description>"No description"</Description>
-      <LastState Value="0000000043740000" RealAddress="14463F6D0"/>
+      <LastState Value="0000000048F70000" RealAddress="14463F6D0"/>
       <ShowAsHex>1</ShowAsHex>
       <VariableType>8 Bytes</VariableType>
       <Address>SoulcaliburVI.exe+463F6D0</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>122</ID>
+      <Description>"No description"</Description>
+      <LastState Value="0" RealAddress="00B6D2E0"/>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00B6D2E0</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>123</ID>
+      <Description>"timer"</Description>
+      <LastState Value="16088" RealAddress="14463E700"/>
+      <VariableType>4 Bytes</VariableType>
+      <Address>SoulcaliburVI.exe+463E700</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>124</ID>
+      <Description>"p1 input"</Description>
+      <LastState Value="0" RealAddress="1445658BC"/>
+      <VariableType>2 Bytes</VariableType>
+      <Address>SoulcaliburVI.exe+45658BC</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>125</ID>
+      <Description>"p1 input alt"</Description>
+      <LastState Value="0" RealAddress="1445658C0"/>
+      <VariableType>2 Bytes</VariableType>
+      <Address>SoulcaliburVI.exe+45658C0</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>126</ID>
+      <Description>"p2 input"</Description>
+      <LastState Value="0" RealAddress="1445FC5CC"/>
+      <VariableType>2 Bytes</VariableType>
+      <Address>SoulcaliburVI.exe+45FC5CC</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>127</ID>
+      <Description>"p2 input alt"</Description>
+      <LastState Value="0" RealAddress="1445FC5D0"/>
+      <VariableType>2 Bytes</VariableType>
+      <Address>SoulcaliburVI.exe+45FC5D0</Address>
     </CheatEntry>
   </CheatEntries>
   <UserdefinedSymbols/>

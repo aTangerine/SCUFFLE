@@ -152,10 +152,6 @@ class LaunchType(Enum):
 
 
 
-
-
-
-
 class HitEffect(Enum):
     #Not launches (frame data displayed correctly)
     hit_00 = 0x0 #(cinematic incoming??)
@@ -382,6 +378,38 @@ def HitEffectToLaunchType(he):
     return ''
 
 
+def ReadInputDirectionCode(code):
+    is_f = ((code & 0x04) > 0)
+    is_b = ((code & 0x08) > 0)
+    is_d = ((code & 0x10) > 0)
+    is_u = ((code & 0x20) > 0)
+
+    if is_f and is_u:
+        return 9
+    if is_f and is_d:
+        return 3
+    if is_b and is_d:
+        return 1
+    if is_b and is_u:
+        return 7
+    if is_u:
+        return 8
+    if is_f:
+        return 6
+    if is_d:
+        return 2
+    if is_b:
+        return 4
+    return 5
+
+
+def ReadInputButtonCode(code):
+    is_a = ((code & 0x01) > 0)
+    is_b = ((code & 0x02) > 0)
+    is_k = ((code & 0x04) > 0)
+    is_g = ((code & 0x08) > 0)
+
+    return '{:01x}'.format(code)
 
 
 

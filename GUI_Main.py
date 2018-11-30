@@ -61,24 +61,27 @@ class GUI_Main(Tk):
         self.tekken_bot_menu = Menu(self.menu)
         self.tekken_bot_menu.add_command(label="Restart", command=self.restart)
 
+        self.menu.add_cascade(label="SCUFFLE", menu=self.tekken_bot_menu)
 
+        self.tools_menu = Menu(self.menu)
         self.move_viewer = None
-        self.tekken_bot_menu.add_command(label="Launch Move Viewer", command=self.launch_move_viewer)
+        self.tools_menu.add_command(label="Launch Move Viewer", command=self.launch_move_viewer)
 
         self.move_id_ometer = None
-        self.tekken_bot_menu.add_command(label="Launch Move-Id-Ometer", command=self.launch_move_id_ometer)
+        self.tools_menu.add_command(label="Launch Move-Id-Ometer", command=self.launch_move_id_ometer)
 
         self.do_show_all_hitbox_data = BooleanVar()
         self.do_show_all_hitbox_data.set(False)
-        self.tekken_bot_menu.add_checkbutton(label='Show frame data for all hitboxes (useful for moves with \'tip\' properties)', onvalue=True, offvalue=False, variable=self.do_show_all_hitbox_data)
+        self.tools_menu.add_checkbutton(label='Show frame data for all hitboxes (useful for moves with \'tip\' properties)', onvalue=True, offvalue=False, variable=self.do_show_all_hitbox_data)
 
         self.do_print_debug_values = BooleanVar()
         self.do_print_debug_values.set(False)
-        self.tekken_bot_menu.add_checkbutton(label='DEBUG: Print Every Frame (WARNING: CPU USAGE HIGH)', onvalue=True, offvalue=False, variable=self.do_print_debug_values)
+        self.tools_menu.add_checkbutton(label='DEBUG: Print Every Frame (WARNING: CPU USAGE HIGH)', onvalue=True, offvalue=False, variable=self.do_print_debug_values)
+
+        self.menu.add_cascade(label="Advanced Tools", menu=self.tools_menu)
 
 
-        #self.tekken_bot_menu.add_checkbutton(label="Print Frame Data To \"TekkenData/frame_data_output.txt\"", onvalue=True, offvalue=False, variable=self.var_print_frame_data_to_file)
-        self.menu.add_cascade(label="SCUFFLE", menu=self.tekken_bot_menu)
+
 
 
         self.checkbox_dict = {}
@@ -228,7 +231,11 @@ class GUI_Main(Tk):
         if self.move_viewer != None:
             if self.launcher.p1_move_id != self.old_move_id and self.launcher.p1_move_id != 0x59: #0x59 is the hex for 'coming to a stop' move_id
                 self.old_move_id = self.launcher.p1_move_id
-                self.move_viewer.load_moveid(self.launcher.p1_move_id)
+                try:
+                    self.move_viewer.load_moveid(self.launcher.p1_move_id)
+                except:
+                    self.move_viewer = None
+
 
         if self.overlay != None:
             self.overlay.update_location()
@@ -254,7 +261,10 @@ class GUI_Main(Tk):
                 if self.move_viewer != None:
                     movelist = self.launcher.game_reader.p1_movelist
                     if movelist != None:
-                        self.move_viewer.set_movelist(movelist)
+                        try:
+                            self.move_viewer.set_movelist(movelist)
+                        except:
+                            self.move_viewer = None
                         self.previous_working_pid += 1
             else:
                 self.previous_working_pid += 1

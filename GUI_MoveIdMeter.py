@@ -3,10 +3,8 @@ from tkinter.ttk import *
 
 import time
 
-import SoulCaliburGameState
+import GameplayEnums
 import _GameStateManager
-
-from collections import defaultdict
 
 class GUI_MoveIdMeter:
     FRAMES = 100
@@ -19,6 +17,7 @@ class GUI_MoveIdMeter:
         4: '^',
         5: '&',
         6: '@',
+        7: '~',
 
     }
 
@@ -40,6 +39,7 @@ class GUI_MoveIdMeter:
         4: '#CCCCCC',
         5: '#FF89D2',
         6: '#E5AC67',
+        7: '#9BFFFF',
     }
 
 
@@ -51,15 +51,18 @@ class GUI_MoveIdMeter:
         4: 'E',
         5: 'F',
         6: 'G',
+        7: 'F',
 
     }
 
 
     def __init__(self, master):
         self.master = master
-        self.master.geometry(str(1500) + 'x' + str(190))
+        self.master.geometry(str(1550) + 'x' + str(250))
         master.title("SCUFFLE Move-Id-Ometer")
         master.iconbitmap('Data/icon.ico')
+
+        guide_font = ("Consolas", 16)
 
         self.style = Style()
         self.style.configure('MoveIdOmeter.TFrame', background='black')
@@ -67,25 +70,57 @@ class GUI_MoveIdMeter:
         self.ometer_frame = Frame(self.master)
         self.ometer_frame.pack()
 
-        self.p1_text = Text(self.ometer_frame, font=("Consolas", 16), width=GUI_MoveIdMeter.FRAMES, height = 1)
-        self.p2_text = Text(self.ometer_frame, font=("Consolas", 16), width=GUI_MoveIdMeter.FRAMES, height=1)
+        self.p1_text = Text(self.ometer_frame, font=guide_font, width=GUI_MoveIdMeter.FRAMES, height = 1)
+        self.p2_text = Text(self.ometer_frame, font=guide_font, width=GUI_MoveIdMeter.FRAMES, height=1)
 
-        self.frames_guide = Text(self.ometer_frame, font=("Consolas", 16), width=GUI_MoveIdMeter.FRAMES, height=1)
+        self.frames_guide = Text(self.ometer_frame, font=guide_font, width=GUI_MoveIdMeter.FRAMES, height=1)
 
-        self.p1_key = Text(self.ometer_frame, font=("Consolas", 16), width=10, height=len(GUI_MoveIdMeter.p1_symbols))
-        self.p2_key = Text(self.ometer_frame, font=("Consolas", 16), width=10, height=len(GUI_MoveIdMeter.p2_symbols))
+        self.p1_key = Text(self.ometer_frame, font=guide_font, width=10, height=len(GUI_MoveIdMeter.p1_symbols))
+        self.p2_key = Text(self.ometer_frame, font=guide_font, width=10, height=len(GUI_MoveIdMeter.p2_symbols))
+
+        self.p1_buttons = Text(self.ometer_frame, font=guide_font, width=GUI_MoveIdMeter.FRAMES, height=1)
+        self.p2_buttons = Text(self.ometer_frame, font=guide_font, width=GUI_MoveIdMeter.FRAMES, height=1)
+        self.p1_directions = Text(self.ometer_frame, font=guide_font, width=GUI_MoveIdMeter.FRAMES, height=1)
+        self.p2_directions = Text(self.ometer_frame, font=guide_font, width=GUI_MoveIdMeter.FRAMES, height=1)
 
         self.selection_var = StringVar()
         self.selection_var.set('000 Frames Selected')
-        self.selection_label = Label(self.ometer_frame, font=("Consolas", 16), textvariable=self.selection_var)
-        self.selection_label.grid(row=3, column = 1)
+        self.selection_label = Label(self.ometer_frame, font=guide_font, textvariable=self.selection_var)
+
+        label_font = ("Consolas", 12)
+        self.p1_dir_label = Label(self.ometer_frame, font=label_font, text="Dir")
+        self.p1_but_label = Label(self.ometer_frame, font=label_font, text="But")
+        self.p1_id_label = Label(self.ometer_frame, font=label_font, text="Id")
+
+        self.p2_dir_label = Label(self.ometer_frame, font=label_font, text="Dir")
+        self.p2_but_label = Label(self.ometer_frame, font=label_font, text="But")
+        self.p2_id_label = Label(self.ometer_frame, font=label_font, text="Id")
 
 
-        self.p1_text.grid(sticky = S, row = 0, column = 1)
-        self.frames_guide.grid(row=1, column=1)
-        self.p2_text.grid(sticky = N,row = 2, column = 1)
-        self.p1_key.grid(row=0, column = 0, rowspan=4)
-        self.p2_key.grid(row=0, column=2, rowspan=4)
+        self.p1_directions.grid(sticky=S, row=0, column=2)
+        self.p1_buttons.grid(sticky = S, row = 1, column = 2)
+        self.p1_text.grid(sticky = S, row = 2, column = 2)
+
+        self.frames_guide.grid(row=3, column=2)
+
+        self.p2_text.grid(sticky = N,row = 4, column = 2)
+        self.p2_buttons.grid(sticky=N, row=5, column=2)
+        self.p2_directions.grid(sticky=N, row=6, column=2)
+
+        self.selection_label.grid(row=7, column=2)
+
+        self.p1_key.grid(row=0, column = 0, rowspan=8)
+        self.p2_key.grid(row=0, column=3, rowspan=8)
+
+        self.p1_dir_label.grid(row=0, column = 1)
+        self.p1_but_label.grid(row=1, column=1)
+        self.p1_id_label.grid(row=2, column=1)
+
+        self.p2_id_label.grid(row=4, column=1)
+        self.p2_but_label.grid(row=5, column=1)
+        self.p2_dir_label.grid(row=6, column=1)
+
+
 
         self.current_frame = -1
 
@@ -102,6 +137,12 @@ class GUI_MoveIdMeter:
         for i in range(GUI_MoveIdMeter.FRAMES):
             if i % 5 == 0:
                 guide_text += '|'
+            elif i == 96:
+                guide_text += 'N'
+            elif i == 97:
+                guide_text += 'O'
+            elif i == 98:
+                guide_text += 'W'
             elif (i + 3) % 5 == 0:
                 if (i + 3) == 5:
                     guide_text += '0'
@@ -135,8 +176,6 @@ class GUI_MoveIdMeter:
         except:
             pass
 
-
-
         if self.current_frame != game_state.game_reader.timer:
             self.current_frame = game_state.game_reader.timer
             #print(game_state.game_reader.timer)
@@ -145,59 +184,88 @@ class GUI_MoveIdMeter:
 
                 prev_p1_move_id = -1
                 prev_p2_move_id = -1
-                p1_string = ''
-                p2_string = ''
 
                 self.p1_text.delete(1.0, END)
                 self.p2_text.delete(1.0, END)
+                self.p1_directions.delete(1.0, END)
+                self.p1_buttons.delete(1.0, END)
+                self.p2_directions.delete(1.0, END)
+                self.p2_buttons.delete(1.0, END)
 
-                for i in reversed(range(1, last_x_frames)):
-                    snapshot = game_state.game_reader.snapshots[-i]
-                    p1_move_id = snapshot.p1.movement_block.movelist_id
-                    p2_move_id = snapshot.p2.movement_block.movelist_id
-                    if p1_move_id != prev_p1_move_id:
-                        prev_p1_move_id = p1_move_id
-                        found_key = False
-                        for key, value in self.p1_keymap.items():
-                            if value == p1_move_id:
-                                self.p1_counter = key
-                                found_key = True
-                                break
-                        if not found_key:
-                            self.p1_counter += 1
-                            self.p1_counter = self.p1_counter % len(GUI_MoveIdMeter.p1_symbols)
-                            self.p1_keymap[self.p1_counter] = p1_move_id
-                    if p2_move_id != prev_p2_move_id:
-                        prev_p2_move_id = p2_move_id
-                        found_key = False
-                        for key, value in self.p2_keymap.items():
-                            if value == p2_move_id:
-                                self.p2_counter = key
-                                found_key = True
-                                break
-                        if not found_key:
-                            self.p2_counter += 1
-                            self.p2_counter = self.p2_counter % len(GUI_MoveIdMeter.p2_symbols)
-                            self.p2_keymap[self.p2_counter] = p2_move_id
-                    p1_string = GUI_MoveIdMeter.p1_symbols[self.p1_counter]
-                    p2_string = GUI_MoveIdMeter.p2_symbols[self.p2_counter]
+                i = -1
 
-                    self.p1_text.insert(END, p1_string, str(self.p1_counter))
-                    self.p2_text.insert(END, p2_string, str(self.p2_counter))
+                for target_frame in range(self.current_frame, self.current_frame - last_x_frames, -1):
+                    snapshot = game_state.game_reader.snapshots[i]
+                    if (target_frame != snapshot.timer):
+                        #print('missing {}'.format(target_frame))
+                        self.p1_text.insert(1.0, ' ')
+                        self.p2_text.insert(1.0, ' ')
+
+                        self.p1_buttons.insert(1.0, ' ')
+                        self.p2_buttons.insert(1.0, ' ')
+
+                        self.p1_directions.insert(1.0, ' ')
+                        self.p2_directions.insert(1.0, ' ')
+
+                    else:
+                        i -= 1
+                        p1_move_id = snapshot.p1.movement_block.movelist_id
+                        p2_move_id = snapshot.p2.movement_block.movelist_id
+                        if p1_move_id != prev_p1_move_id:
+                            prev_p1_move_id = p1_move_id
+                            found_key = False
+                            for key, value in self.p1_keymap.items():
+                                if value == p1_move_id:
+                                    self.p1_counter = key
+                                    found_key = True
+                                    break
+                            if not found_key:
+                                self.p1_counter += 1
+                                self.p1_counter = self.p1_counter % len(GUI_MoveIdMeter.p1_symbols)
+                                self.p1_keymap[self.p1_counter] = p1_move_id
+                                self.p1_key.delete(1.0, END)
+                                for x, y in self.p1_keymap.items():
+                                    self.p1_key.insert(END, '{}: {}\n'.format(GUI_MoveIdMeter.p1_symbols[x], y), str(x))
+
+                        if p2_move_id != prev_p2_move_id:
+                            prev_p2_move_id = p2_move_id
+                            found_key = False
+                            for key, value in self.p2_keymap.items():
+                                if value == p2_move_id:
+                                    self.p2_counter = key
+                                    found_key = True
+                                    break
+                            if not found_key:
+                                self.p2_counter += 1
+                                self.p2_counter = self.p2_counter % len(GUI_MoveIdMeter.p2_symbols)
+                                self.p2_keymap[self.p2_counter] = p2_move_id
+                                self.p2_key.delete(1.0, END)
+                                for x, y in self.p2_keymap.items():
+                                    self.p2_key.insert(END, '{}: {}\n'.format(GUI_MoveIdMeter.p2_symbols[x], y), str(x))
+
+
+                        p1_move_id_string = GUI_MoveIdMeter.p1_symbols[self.p1_counter]
+                        p2_move_id_string = GUI_MoveIdMeter.p2_symbols[self.p2_counter]
+
+                        self.p1_text.insert(1.0, p1_move_id_string, str(self.p1_counter))
+                        self.p2_text.insert(1.0, p2_move_id_string, str(self.p2_counter))
+
+
+                        p1_button = snapshot.p1.global_block.input_code_button
+                        p1_direction = snapshot.p1.global_block.input_code_direction
+
+                        p2_button = snapshot.p2.global_block.input_code_button
+                        p2_direction = snapshot.p2.global_block.input_code_direction
+
+                        self.p1_buttons.insert(1.0, GameplayEnums.ReadInputButtonCode(p1_button))
+                        self.p2_buttons.insert(1.0, GameplayEnums.ReadInputButtonCode(p2_button))
+
+                        self.p1_directions.insert(1.0, GameplayEnums.ReadInputDirectionCode(p1_direction))
+                        self.p2_directions.insert(1.0, GameplayEnums.ReadInputDirectionCode(p2_direction))
 
 
 
 
-
-
-
-                self.p1_key.delete(1.0, END)
-                for x, y in self.p1_keymap.items():
-                    self.p1_key.insert(END, '{}: {}\n'.format(GUI_MoveIdMeter.p1_symbols[x], y), str(x))
-
-                self.p2_key.delete(1.0, END)
-                for x, y in self.p2_keymap.items():
-                    self.p2_key.insert(END, '{}: {}\n'.format(GUI_MoveIdMeter.p2_symbols[x], y), str(x))
 
 
 
