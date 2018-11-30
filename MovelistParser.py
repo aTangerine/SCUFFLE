@@ -851,7 +851,8 @@ class Movelist:
                     try:
                         next_instruction = CC(inst)
                     except Exception as e:
-                        print('ERROR move_id:{} hex:{}'.format(cancel.move_id, hex(inst)))
+                        break
+                        #print('ERROR move_id:{} hex:{}'.format(cancel.move_id, hex(inst)))
                         #unlisted_singles.append((inst, i))
                         next_instruction = inst
                         #raise e
@@ -1107,8 +1108,9 @@ if __name__ == "__main__":
 
         movelists = []
         for filename in os.listdir(directory):
-            if filename.endswith('.m0000'):
+            if filename.endswith('.m0000') or filename.endswith('.sc6_movelist'):
                 localpath = '{}/{}'.format(directory, filename)
+                print('loading {}...'.format(localpath))
                 movelist = Movelist.from_file(localpath)
                 movelists.append(movelist)
         return movelists
@@ -1117,8 +1119,8 @@ if __name__ == "__main__":
 
     #input_file = 'movelists/xianghua_movelist.byte.m0000' #these come from cheat engine, memory viewer -> memory regions -> (movelist address) . should be 0x150000 bytes
 
-    #movelists = load_all_movelists()
-    movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
+    movelists = load_all_movelists()
+    #movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
