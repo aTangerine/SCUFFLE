@@ -851,11 +851,9 @@ class Movelist:
                     try:
                         next_instruction = CC(inst)
                     except Exception as e:
+                        #Either we've hit a new single (exciting!) or more likely we've overflowed into non-movelist bytes (sad)
+                        #print('ERROR move_id:{} hex:{}'.format(cancel.move_id, hex(inst))) #don't call this during tkinter boot up sequence
                         break
-                        #print('ERROR move_id:{} hex:{}'.format(cancel.move_id, hex(inst)))
-                        #unlisted_singles.append((inst, i))
-                        next_instruction = inst
-                        #raise e
                     #if it's an argument instruction, we store it for future use in an exe instruction
                     if next_instruction in Movelist.THREE_BYTE_INSTRUCTIONS:
                         args_expected = 2

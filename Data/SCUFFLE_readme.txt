@@ -4,9 +4,7 @@ SCUFFLE is the Soul Callibur live frame data UFFLE reader
 * Launch SCUFFLE and Soul Calibur 6 at the same time and the overlay should display during fights
 * It's probably gonna break after official patches, then you must wait for a kind hearted soul to update it
 
-KNOWN ISSUES:
-* It's the first release, everything sucks, whaddya expect. If your character has character specific stuff that doesn't work, be sure to tell someone or it ain't getting fixed.
-* Knockdowns and launchers are a crapshoot for useful frame data
-* Supers and unblockables and reversal edges have weird/bad startup and other data
-* Some moves, particularly launching moves like 3B and while rising B moves, seem to display 1 frame of startup less than they should, be suspicious of any move with an odd number of startup frames
-* Transitions to and from stances, always and forever, don't give good data
+GOOD STUFF TO KNOW:
+* Some moves, particularly launchers and moves with 'tip' properties such as Seong Mina's spear or Siegfried's sword, have multiple hitboxes. By default only the first is displayed but check Tools >> Display All Hitboxes to see the data for the rest.
+* Transitioning to a stance replaces the recovery with a much more difficult to calculate number that SCUFFLE is not currently smart enough to find. This means any move that ends in a stance transition has bad frame data. However, the relative difference between block/hit/counter will remain the same.
+* There's still a lot of innacurate data, be suspiciuos.
