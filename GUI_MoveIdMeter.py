@@ -58,11 +58,13 @@ class GUI_MoveIdMeter:
 
     def __init__(self, master):
         self.master = master
-        self.master.geometry(str(1550) + 'x' + str(250))
+        #self.master.geometry(str(1550) + 'x' + str(250))
         master.title("SCUFFLE Move-Id-Ometer")
+        master.attributes("-topmost", True)
         master.iconbitmap('Data/icon.ico')
 
-        guide_font = ("Consolas", 16)
+        guide_font = ("Consolas", 12)
+        label_font = ("Consolas", 8)
 
         self.style = Style()
         self.style.configure('MoveIdOmeter.TFrame', background='black')
@@ -87,7 +89,7 @@ class GUI_MoveIdMeter:
         self.selection_var.set('000 Frames Selected')
         self.selection_label = Label(self.ometer_frame, font=guide_font, textvariable=self.selection_var)
 
-        label_font = ("Consolas", 12)
+
         self.p1_dir_label = Label(self.ometer_frame, font=label_font, text="Dir")
         self.p1_but_label = Label(self.ometer_frame, font=label_font, text="But")
         self.p1_id_label = Label(self.ometer_frame, font=label_font, text="Id")
