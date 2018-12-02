@@ -61,18 +61,18 @@ class SC6GameReader:
                 else:
                     if self.p1_movelist == None:
                         #movelist_sample = GetValueFromAddress(process_handle, AddressMap.p1_movelist_address, isString=True)
-                        movelist_sample = GetDataBlockAtEndOfPointerOffsetList(process_handle, 0, [AddressMap.p1_movelist_address], 0x4)
+                        movelist_sample = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, [AddressMap.p1_movelist_address], 0x4)
                         movelist_sample = GetValueFromDataBlock(movelist_sample, 0)
 
                         if  movelist_sample == MovelistParser.Movelist.STARTER_INT:
-                            p1_movelist_data = GetDataBlockAtEndOfPointerOffsetList(process_handle, 0, [AddressMap.p1_movelist_address], AddressMap.MOVELIST_BYTES)
-                            p2_movelist_data = GetDataBlockAtEndOfPointerOffsetList(process_handle, 0, [AddressMap.p2_movelist_address], AddressMap.MOVELIST_BYTES)
+                            p1_movelist_data = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, [AddressMap.p1_movelist_address], AddressMap.MOVELIST_BYTES)
+                            p2_movelist_data = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, [AddressMap.p2_movelist_address], AddressMap.MOVELIST_BYTES)
                             self.p1_movelist = MovelistParser.Movelist(p1_movelist_data, 'p1')
                             self.p2_movelist = MovelistParser.Movelist(p2_movelist_data, 'p2')
                         else:
                             return False
 
-                    new_timer = GetValueFromAddress(process_handle, AddressMap.global_timer_address)
+                    new_timer = GetValueFromAddress(process_handle, self.module_address + AddressMap.global_timer_address)
 
                     if self.timer == new_timer:
                         return False
@@ -89,10 +89,10 @@ class SC6GameReader:
                     p1_timer_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p1_timer_block_breadcrumb, 0x200)
                     p2_timer_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p2_timer_block_breadcrumb, 0x200)
 
-                    p1_input = GetValueFromAddress(process_handle, AddressMap.p1_input_address, is_short =True)
+                    p1_input = GetValueFromAddress(process_handle, self.module_address + AddressMap.p1_input_address, is_short =True)
                     p1_global = SC6GlobalBlock(p1_input)
 
-                    p2_input = GetValueFromAddress(process_handle, AddressMap.p2_input_address, is_short=True)
+                    p2_input = GetValueFromAddress(process_handle, self.module_address + AddressMap.p2_input_address, is_short=True)
                     p2_global = SC6GlobalBlock(p2_input)
 
                     value_p1 = PlayerSnapshot(self.p1_movelist, p1_startup_block, p1_movement_block, p1_timer_block, p1_global)

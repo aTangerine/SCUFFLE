@@ -9,13 +9,13 @@ offset_movement_type_block = 0x160
 offset_timer_block = 0x110
 
 #The following addresses are all global (green adresses in cheat engine)
-global_timer_address = 0x14463E700 #there's a bunch of these, 4 bytes ; should go up until training mode is reset (goes to 0).
+global_timer_address = 0x463E700 #there's a bunch of these, 4 bytes ; should go up until training mode is reset (goes to 0).
 
-p1_input_address = 0x1445658BC
-p2_input_address = 0x1445FC5CC
+p1_input_address = 0x45658BC
+p2_input_address = 0x45FC5CC
 
-p1_movelist_address = 0x1445A89C0 #xianghua movelist starting bytes: 59 B7 13 4D C7 0A 91 B7 2F 7B B3 AF 45 4E 39 4A 18 EE 80 CB 7A 12 D2 7E F5 48 FB B0 4E 71 D6 88 29 61 C6 25 F5 9A 42 0E
-p2_movelist_address = 0x14463F6D0 #other starting bytes available in /movelists although they may have changed slightly if the patch touches the movelist
+p1_movelist_address = 0x45A89C0 #xianghua movelist starting bytes: 59 B7 13 4D C7 0A 91 B7 2F 7B B3 AF 45 4E 39 4A 18 EE 80 CB 7A 12 D2 7E F5 48 FB B0 4E 71 D6 88 29 61 C6 25 F5 9A 42 0E
+p2_movelist_address = 0x463F6D0 #other starting bytes available in /movelists although they may have changed slightly if the patch touches the movelist
 
 MOVELIST_BYTES = 0x150000 #memory allocated for movelist,
 
@@ -32,11 +32,15 @@ offset_movement_type_block = address_config.get_hex_property(section_block, 'mov
 offset_timer_block = address_config.get_hex_property(section_block, 'timer_block', offset_timer_block)
 
 section_global = 'Global Addresses'
+global_timer_address = address_config.get_hex_property(section_global, 'global_timer', global_timer_address)
+
 p1_input_address = address_config.get_hex_property(section_global, 'p1_input_buffer', p1_input_address)
 p2_input_address = address_config.get_hex_property(section_global, 'p2_input_buffer', p2_input_address)
 
 p1_movelist_address = address_config.get_hex_property(section_global, 'p1_movelist_address', p1_movelist_address)
 p2_movelist_address = address_config.get_hex_property(section_global, 'p2_movelist_address', p2_movelist_address)
+
+
 
 address_config.write()
 
@@ -78,3 +82,8 @@ p2_end_of_move_cancelable_frames = 0x14455B5B0
 p1_total_animation_frames = 0x1445A7D80 #for Tira AA is 52/56, remember this is a FLOAT #for xianghua's aab 46/55/62
 p2_total_animation_frames = 0x14463EA90
 '''
+
+
+
+
+

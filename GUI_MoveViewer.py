@@ -65,6 +65,9 @@ class GUI_MoveViewer:
         self.load_button = Button(move_id_entry_container, text="Load", command=lambda: self.load_moveid(move_id_entry.get()))
         self.load_button.pack()
 
+        self.load_encoded_button = Button(move_id_entry_container, text="Load (Encoded)", command=lambda: self.load_moveid(move_id_entry.get(), True))
+        self.load_encoded_button.pack()
+
         self.next_move_id_button = Button(move_id_entry_container, text="+", command=lambda: self.next_move_id_command())
         self.prev_move_id_button = Button(move_id_entry_container, text="-", command=lambda: self.prev_move_id_command())
 
@@ -203,12 +206,17 @@ class GUI_MoveViewer:
     def prev_move_id_command(self):
         self.load_moveid(int(self.move_id_textvar.get().split(':')[1]) - 1)
 
-    def load_moveid(self, move_id):
+
+
+    def load_moveid(self, move_id, is_encoded=False):
         try:
             id = int(move_id)
         except:
             print('unrecognized move_id: {}'.format(move_id))
             return
+
+        if is_encoded:
+            id = MovelistParser.decode_move_id(id, self.movelist)
 
         if id < len(self.movelist.all_moves) and id >= 0:
             self.move_id_textvar.set('move id: {}'.format(id))

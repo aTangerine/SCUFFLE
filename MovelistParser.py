@@ -38,13 +38,13 @@ def encode_move_id(decoded_move_id, movelist):
 
 def decode_move_id(encoded_move_id, movelist):
     move_id = encoded_move_id
-    if move_id > 0x3000:  # this is kinda an escape value for stances??? and neutral???
+    if move_id >= 0x3000:  # this is kinda an escape value for stances??? and neutral???
         move_id -= 0x3000
         move_id += movelist.block_T_start
-    elif move_id > 0x2000:
+    elif move_id >= 0x2000:
         move_id -= 0x2000
         move_id += movelist.block_S_start
-    elif move_id > 0x1000:
+    elif move_id >= 0x1000:
         move_id -= 0x1000
         move_id += movelist.block_R_start
     return move_id
@@ -255,7 +255,7 @@ class Attack:
     def get_gui_guide(self):
         guide = [
             (0x00, 0x02, b2i, "???"),
-            (0x02, 0x04, b2i, "???"),
+            (0x02, 0x04, b2i, "hitbox width/hitbox... height(?)"),
 
             (0x04, 0x08, b2i, "???"),
 
@@ -271,13 +271,13 @@ class Attack:
 
             (0x32, 0x33, b1i, "hit level (high/low/unblockable/etc.)"),
             (0x33, 0x34, b1i, "???"),
-            (0x34, 0x36, b2i, "???"),
+            (0x34, 0x36, b2i, "hit spark type (contributes to guard damage)"),
             (0x36, 0x38, b2i, "begin active frames (startup)"),
             (0x38, 0x3A, b2i, "end active frames"),
             (0x3A, 0x3C, b2i, "damage"),
 
             (0x3C, 0x40, b4i, "???"),
-            (0x40, 0x44, b4i, "hit spark type (contributes to guard damage)"),
+            (0x40, 0x44, b4i, "???"),
             (0x44, 0x46, b2i, "frames of block stun"),
             (0x46, 0x48, b2i, "frames of hit stun"),
             (0x48, 0x4a, b2i, "frames of counterhit stun"),
@@ -292,8 +292,7 @@ class Attack:
             (0x58, 0x5a, b2i, "???"),
             (0x5a, 0x5c, b2i, "guard damage override (otherwise uses hit spark size and type calc)"),
             (0x5c, 0x5e, b2i, "???"),
-            (0x5e, 0x60, b2i, "???"),
-
+            (0x5e, 0x60, b2i, "guard damage contributor"),
             (0x60, 0x62, b2i, "???"),
 
             (0x62, 0x64, b2i, "hit spark size (contributes to guard damage)"),
@@ -1053,6 +1052,69 @@ class Movelist:
                 if not '?' in node[3]:
                     fw.write('{};{};{};{}\n'.format(node[0], node[1], node[2], node[3]))
 
+    def reverse_spider_crawl(self):
+        from collections import defaultdict
+        neutral_ids = self.parse_neutral().keys()
+
+        starting_nodes = []
+        for i in range(0x101, self.block_Q_length): #these are the 'interesting' moves, minus a few like soul charge
+            starting_nodes.append(i)
+
+        edges = set()
+        true_edges = set()
+        old = set()
+        to_check = set(starting_nodes)
+        more_checks = set()
+        for _ in range(1):
+            for cancel in self.move_ids_to_cancels.values():
+                    links = cancel.links
+                    for link in links:
+                        if (link.move_id in to_check):
+                            if link.move_id in starting_nodes and cancel.move_id in starting_nodes:
+                                true_edges.add((cancel.move_id, link.move_id))
+                            else:
+                                edges.add((cancel.move_id, link.move_id))
+                                if (not cancel.move_id in to_check) and (not cancel.move_id in old):
+                                    more_checks.add(cancel.move_id)
+            old.update(to_check)
+            to_check = set(more_checks)
+            more_checks = set()
+        print(len(edges))
+        print(edges)
+
+        #consolidate stances
+        for cancel in self.move_ids_to_cancels.values():
+            if cancel.move_id in starting_nodes:
+                for x1, y1 in edges:
+                    for link in cancel.links:
+                        if link.move_id == x1:
+                            true_edges.add((cancel.move_id, y1))
+
+        print(len(true_edges))
+        print(true_edges)
+
+        #remove edges to anything in neutral (clears up 1 frame cancels):
+        cleaned_edges = set()
+        for x1, y1 in true_edges:
+            if not y1 in neutral_ids:
+                cleaned_edges.add((x1, y1))
+        true_edges = cleaned_edges
+
+
+        #add neutral
+        for move_id in neutral_ids:
+            true_edges.add((0, move_id))
+
+        with open('graph2.csv', 'w') as fw:
+            fw.write('Source;Target;Label\n')
+            for start, stop in true_edges:
+                try:
+                    com = self.move_ids_to_commands[stop]
+                except:
+                    com = '?'
+                fw.write('{};{};{}\n'.format(start, stop, com))
+
+
     def write_cancels(self):
         with open('cancels/c_{}'.format(self.name), 'w') as fw:
             print('making cancels for {}'.format(self.name))
@@ -1117,14 +1179,14 @@ if __name__ == "__main__":
 
     #input_file = 'movelists/xianghua_movelist.byte.m0000' #these come from cheat engine, memory viewer -> memory regions -> (movelist address) . should be 0x150000 bytes
 
-    movelists = load_all_movelists()
+    #movelists = load_all_movelists()
     #movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/mitsurugi_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/ivy_movelist.m0000')]
-    #movelists = [Movelist.from_file('movelists/geralt_movelist.m0000')]
+    movelists = [Movelist.from_file('movelists/geralt_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/siegfried_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/voldo_movelist.m0000')]
 
@@ -1161,5 +1223,6 @@ if __name__ == "__main__":
             print('{} : {} : 0x{:04x}'.format(cancel.type, cancel.move_id, encode_move_id(cancel.move_id, movelists[0])))'''
 
     #movelists[0].alt_parse(2345)
+    movelists[0].reverse_spider_crawl()
 
 
