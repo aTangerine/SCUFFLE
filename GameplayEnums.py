@@ -400,7 +400,7 @@ def ReadInputDirectionCode(code):
         return 2
     if is_b:
         return 4
-    return 5
+    return ' '
 
 
 def ReadInputButtonCode(code):
@@ -408,6 +408,9 @@ def ReadInputButtonCode(code):
     is_b = ((code & 0x02) > 0)
     is_k = ((code & 0x04) > 0)
     is_g = ((code & 0x08) > 0)
+
+    if not is_a and not is_b and not is_k and not is_g:
+        return ' '
 
     return '{:01x}'.format(code)
 

@@ -177,20 +177,36 @@ class GUI_MoveIdMeter:
             pass
 
         if self.current_frame != game_state.game_reader.timer:
+            missing_frames = min(GUI_MoveIdMeter.FRAMES, game_state.game_reader.timer - self.current_frame)
+            old_frame = self.current_frame
             self.current_frame = game_state.game_reader.timer
+
             #print(game_state.game_reader.timer)
-            last_x_frames = GUI_MoveIdMeter.FRAMES
+            last_x_frames = missing_frames
             if len(game_state.game_reader.snapshots) > last_x_frames:
 
                 prev_p1_move_id = -1
                 prev_p2_move_id = -1
+                size = len(self.p1_text.get('1.0', END))
+                if size > GUI_MoveIdMeter.FRAMES:
+                    delete_index = size - GUI_MoveIdMeter.FRAMES + missing_frames
 
-                self.p1_text.delete(1.0, END)
-                self.p2_text.delete(1.0, END)
-                self.p1_directions.delete(1.0, END)
-                self.p1_buttons.delete(1.0, END)
-                self.p2_directions.delete(1.0, END)
-                self.p2_buttons.delete(1.0, END)
+                    self.p1_text.delete(1.0, '1.{}'.format(missing_frames))
+                    self.p2_text.delete(1.0, '1.{}'.format(missing_frames))
+                    self.p1_directions.delete(1.0, '1.{}'.format(missing_frames))
+                    self.p1_buttons.delete(1.0, '1.{}'.format(missing_frames))
+                    self.p2_directions.delete(1.0, '1.{}'.format(missing_frames))
+                    self.p2_buttons.delete(1.0, '1.{}'.format(missing_frames))
+
+                if self.current_frame < old_frame:
+                    self.p1_text.delete(1.0, END)
+                    self.p2_text.delete(1.0, END)
+                    self.p1_directions.delete(1.0, END)
+                    self.p1_buttons.delete(1.0, END)
+                    self.p2_directions.delete(1.0, END)
+                    self.p2_buttons.delete(1.0, END)
+
+
 
                 i = -1
 
@@ -198,14 +214,14 @@ class GUI_MoveIdMeter:
                     snapshot = game_state.game_reader.snapshots[i]
                     if (target_frame != snapshot.timer):
                         #print('missing {}'.format(target_frame))
-                        self.p1_text.insert(1.0, ' ')
-                        self.p2_text.insert(1.0, ' ')
+                        self.p1_text.insert(END, ' ')
+                        self.p2_text.insert(END, ' ')
 
-                        self.p1_buttons.insert(1.0, ' ')
-                        self.p2_buttons.insert(1.0, ' ')
+                        self.p1_buttons.insert(END, ' ')
+                        self.p2_buttons.insert(END, ' ')
 
-                        self.p1_directions.insert(1.0, ' ')
-                        self.p2_directions.insert(1.0, ' ')
+                        self.p1_directions.insert(END, ' ')
+                        self.p2_directions.insert(END, ' ')
 
                     else:
                         i -= 1
@@ -247,8 +263,8 @@ class GUI_MoveIdMeter:
                         p1_move_id_string = GUI_MoveIdMeter.p1_symbols[self.p1_counter]
                         p2_move_id_string = GUI_MoveIdMeter.p2_symbols[self.p2_counter]
 
-                        self.p1_text.insert(1.0, p1_move_id_string, str(self.p1_counter))
-                        self.p2_text.insert(1.0, p2_move_id_string, str(self.p2_counter))
+                        self.p1_text.insert(END, p1_move_id_string, str(self.p1_counter))
+                        self.p2_text.insert(END, p2_move_id_string, str(self.p2_counter))
 
 
                         p1_button = snapshot.p1.global_block.input_code_button
@@ -257,11 +273,11 @@ class GUI_MoveIdMeter:
                         p2_button = snapshot.p2.global_block.input_code_button
                         p2_direction = snapshot.p2.global_block.input_code_direction
 
-                        self.p1_buttons.insert(1.0, GameplayEnums.ReadInputButtonCode(p1_button))
-                        self.p2_buttons.insert(1.0, GameplayEnums.ReadInputButtonCode(p2_button))
+                        self.p1_buttons.insert(END, GameplayEnums.ReadInputButtonCode(p1_button))
+                        self.p2_buttons.insert(END, GameplayEnums.ReadInputButtonCode(p2_button))
 
-                        self.p1_directions.insert(1.0, GameplayEnums.ReadInputDirectionCode(p1_direction))
-                        self.p2_directions.insert(1.0, GameplayEnums.ReadInputDirectionCode(p2_direction))
+                        self.p1_directions.insert(END, GameplayEnums.ReadInputDirectionCode(p1_direction))
+                        self.p2_directions.insert(END, GameplayEnums.ReadInputDirectionCode(p2_direction))
 
 
 
