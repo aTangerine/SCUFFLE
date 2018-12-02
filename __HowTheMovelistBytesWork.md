@@ -170,7 +170,18 @@ The index of Voldo's soul charge move is 0x0CC + 0x98C. For Xianghua, her header
    * [start] and [stop] are 2(?) frames before state takes effect and ends
 
  * 8b [0x3064] ...
-   * GI frames(?)
+   * GI frames/armor frames
+   * Includes the type of GI (armor/GI), the frames active, either the level (high/low/all) or damage amount 
+   absorbed (for armor), some booleans indicating what exactly is GI'd (Horizontal/Vertical/Kick/???).
+   
+ * 8b 07 d1 ....
+   * Plays a voice clip ("You're open!")
+  
+ * 8b 30 a3 ... [6 or more args]
+   * 'Electric' effect for guard breaks. 
+   * Includes the frames to show electricity, the type/number of trails to show, and when the 'flash' goes off.
+   
+ * 
    
  
 

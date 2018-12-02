@@ -17,9 +17,12 @@ class ConfigReader:
         except:
             print("Error reading config data from " + self.path + ". Using default values.")
 
+    def get_hex_property(self, section, property_string, default_int):
+        hex_string = hex(default_int)
+        config_string = self.get_property(section, property_string, hex_string)
+        return int(config_string, 16)
 
     def get_property(self, section, property_string, default_value):
-
         try:
             if type(default_value) is bool:
                 value = self.parser.getboolean(section, property_string)

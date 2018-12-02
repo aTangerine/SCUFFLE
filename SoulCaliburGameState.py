@@ -89,17 +89,11 @@ class SC6GameReader:
                     p1_timer_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p1_timer_block_breadcrumb, 0x200)
                     p2_timer_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.p2_timer_block_breadcrumb, 0x200)
 
-                    p1_total_animation_frames = GetValueFromAddress(process_handle, AddressMap.p1_total_animation_frames, isFloat=True)
-                    p1_end_of_move_cancelable_frames = GetValueFromAddress(process_handle, AddressMap.p1_end_of_move_cancelable_frames, is_short =True)
                     p1_input = GetValueFromAddress(process_handle, AddressMap.p1_input_address, is_short =True)
+                    p1_global = SC6GlobalBlock(p1_input)
 
-                    p1_global = SC6GlobalBlock(p1_total_animation_frames, p1_end_of_move_cancelable_frames, p1_input)
-
-                    p2_total_animation_frames = GetValueFromAddress(process_handle, AddressMap.p2_total_animation_frames, isFloat=True)
-                    p2_end_of_move_cancelable_frames = GetValueFromAddress(process_handle, AddressMap.p2_end_of_move_cancelable_frames, is_short=True)
                     p2_input = GetValueFromAddress(process_handle, AddressMap.p2_input_address, is_short=True)
-
-                    p2_global = SC6GlobalBlock(p2_total_animation_frames, p2_end_of_move_cancelable_frames, p2_input)
+                    p2_global = SC6GlobalBlock(p2_input)
 
                     value_p1 = PlayerSnapshot(self.p1_movelist, p1_startup_block, p1_movement_block, p1_timer_block, p1_global)
                     value_p2 = PlayerSnapshot(self.p2_movelist, p2_startup_block, p2_movement_block, p2_timer_block, p2_global)
@@ -231,10 +225,7 @@ class SC6StartupBlock:
 
 
 class SC6GlobalBlock:
-    def __init__(self, total_animation_frames, end_of_move_cancelable_frames, input_short):
-        self.total_animation_frames = int(total_animation_frames)
-        self.end_of_move_cancelable_frames = end_of_move_cancelable_frames
-
+    def __init__(self, input_short):
         left_bytes = (input_short & 0xFF00) >> 8
         right_bytes = input_short & 0x00FF
 
@@ -243,7 +234,7 @@ class SC6GlobalBlock:
 
     def __repr__(self):
         repr = "{} | {} |".format(
-            self.total_animation_frames, self.end_of_move_cancelable_frames)
+            self.input_code_button, self.input_code_direction)
         return repr
 
 
