@@ -826,6 +826,7 @@ class Movelist:
         cancels = [x for x in self.all_cancels.values() if x.type >= 8] #less hackish way to find neutral
 
         move_ids_to_commands = {}
+        replacements = []
         for cancel in cancels:
             #state machine variables
             args_expected = 0
@@ -837,9 +838,12 @@ class Movelist:
             next_19_is_normal_move = False
             next_19_is_8way_move = False
             next_19_is_backturned_move = False
+            next_19_is_while_running = False
+            next_19_is_azwel_replacement = False
             while_crouching_flag = False
             while_standing_signs = [-1]
             buffers = [buf_89, buf_8a, buf_8b]
+
 
 
             for i in range(len((cancel.bytes))):
@@ -870,12 +874,17 @@ class Movelist:
                                 next_8b_is_input = True
                             if buf_8a[-1] == 0x0103 or buf_8a[-1] == 0x0104: #0x0104 only for tira gloomy???
                                 next_19_is_8way_move = True
+                            if buf_8a[-1] == 0x105:
+                                next_19_is_azwel_replacement = True
                             if buf_8a[-1] == 0x003D:
                                 next_19_is_normal_move = True
                             if buf_8a[-1] == 0x0048:
                                 #next_19_is_backturned_move = True
                                 next_19_is_normal_move = True
                         if next_instruction in [CC.ARG_8B]:
+                            if buf_8b[-1] == 0x001f:
+                                next_19_is_while_running = True
+
                             if next_8b_is_input:
                                 button_code = buf_8b[-1]
                                 next_8b_is_input = False
@@ -895,7 +904,7 @@ class Movelist:
                             next_19_is_8way_move = False
                             next_19_is_normal_move = False
 
-                        elif next_19_is_normal_move or next_19_is_8way_move:
+                        elif next_19_is_normal_move or next_19_is_8way_move or next_19_is_while_running:
                             if not while_crouching_flag and next_19_is_normal_move: #hack way to guess when we've reached while crouching moves
                                 if button_code in while_standing_signs:
                                     if button_code != while_standing_signs[-1]:
@@ -905,7 +914,9 @@ class Movelist:
 
                             command = '{}{}'.format(dir, button)
 
-                            if next_19_is_8way_move:
+                            if next_19_is_while_running:
+                                command = 'WR {}'.format(command)
+                            elif next_19_is_8way_move:
                                 command = '{}{}'.format(dir, command)
                             elif while_crouching_flag:
                                 pass #TODO: better way to detect WC?
@@ -924,7 +935,20 @@ class Movelist:
                             next_19_is_normal_move = False
                             next_19_is_8way_move = False
                             next_19_is_backturned_move = False
+                            next_19_is_while_running = False
+                            next_19_is_azwel_replacement = False
 
+                        elif next_19_is_azwel_replacement:
+                            next_19_is_azwel_replacement = False
+                            id = buf_8b[-1]
+                            replace = buf_8b[-2]
+                            replacements.append((id, replace))
+
+
+        for id, replace in replacements:
+            if replace in move_ids_to_commands and not id in move_ids_to_commands:
+                #print('replacement {} -> {}'.format(id, replace))
+                move_ids_to_commands[id] = '!{}'.format(move_ids_to_commands[replace])
         return move_ids_to_commands
 
     def condition_parse(self, move_id):
@@ -1179,16 +1203,17 @@ if __name__ == "__main__":
 
     #input_file = 'movelists/xianghua_movelist.byte.m0000' #these come from cheat engine, memory viewer -> memory regions -> (movelist address) . should be 0x150000 bytes
 
-    #movelists = load_all_movelists()
+    movelists = load_all_movelists()
     #movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/mitsurugi_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/ivy_movelist.m0000')]
-    movelists = [Movelist.from_file('movelists/geralt_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/geralt_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/siegfried_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/voldo_movelist.m0000')]
+    #movelists = [Movelist.from_file('movelists/azwel_movelist.m0000')]
 
     #for movelist in movelists:
 
@@ -1201,10 +1226,13 @@ if __name__ == "__main__":
         print(link)
 
     for cancel in movelists[0].move_ids_to_cancels.values():
+        if cancel.type >= 8:
+            print(cancel.move_id)
         for link in cancel.links:
-            if link.move_id == 532:
+            if link.move_id == 464:
                 print(cancel.move_id)
                 print(link)
+
 
 
     '''true_counter = 0
@@ -1223,6 +1251,6 @@ if __name__ == "__main__":
             print('{} : {} : 0x{:04x}'.format(cancel.type, cancel.move_id, encode_move_id(cancel.move_id, movelists[0])))'''
 
     #movelists[0].alt_parse(2345)
-    movelists[0].reverse_spider_crawl()
+    #movelists[0].reverse_spider_crawl()
 
 
