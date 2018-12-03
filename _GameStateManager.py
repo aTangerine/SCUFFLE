@@ -94,7 +94,7 @@ class GameStateManager:
         record.append(id)
         #bhc_stuns.append((0, 0, 0))
         #if id != 0x59 and id <= movelist.block_Q_length:  # 0x59 is the 'coming to a stop' move_id from 8 way run and above q_length are 'imaginary' moves
-        if (id > 0x0100 and id <= movelist.block_Q_length) or id == 212: #212 is soul charge, the only interesting move below 0x0100
+        if (id >= 0x0100 and id <= movelist.block_Q_length) or id == 212 or id == 214: #212 is soul charge, the only interesting move below 0x0100
                 if len(bhc_stuns) > 1:
                     stun = bhc_stuns[-1] #declare here in case we add a new one in FrameStringFromMovelist
                 s = GameStateManager.FrameStringFromMovelist(name, p, record, bhc_stuns, self.game_reader.snapshots[-1].timer)
