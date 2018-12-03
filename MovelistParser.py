@@ -625,13 +625,13 @@ class Link:
                             if arg_2 == PaddedButton.dd.value:
                                 return PaddedButton(arg_2)
 
-                    if (int(c[index + 3]) == 0x8a): #8b 00 05 8a 00 f0 for RE release
-                        if arg_1 == 0x0005: #release?
-                            return PaddedButton.RE
+                    #if (int(c[index + 3]) == 0x8a): #8b 00 05 8a 00 f0 for RE release
+                        #if arg_1 == 0x0005: #release?
+                            #return PaddedButton.RE
 
-                if b == 0x8a:  # 8a 01 00 8b 7f ff for RE hold
-                    if (int(c[index + 3]) == 0x8b):
-                        return PaddedButton.RE
+                #if b == 0x8a:  # 8a 01 00 8b 7f ff for RE hold
+                    #if (int(c[index + 3]) == 0x8b):
+                        #return PaddedButton.RE
 
 
                 index += 3
@@ -823,7 +823,7 @@ class Movelist:
 
 
     def parse_neutral(self):
-        cancels = [x for x in self.all_cancels.values() if x.type >= 8] #less hackish way to find neutral
+        cancels = [x for x in self.all_cancels.values() if x.type >= 4] #less hackish way to find neutral
 
         move_ids_to_commands = {}
         replacements = []
@@ -840,6 +840,7 @@ class Movelist:
             next_19_is_backturned_move = False
             next_19_is_while_running = False
             next_19_is_azwel_replacement = False
+            next_19_is_236 = False
             while_crouching_flag = False
             while_standing_signs = [-1]
             buffers = [buf_89, buf_8a, buf_8b]
@@ -876,7 +877,7 @@ class Movelist:
                                 next_19_is_8way_move = True
                             if buf_8a[-1] == 0x105:
                                 next_19_is_azwel_replacement = True
-                            if buf_8a[-1] == 0x003D:
+                            if buf_8a[-1] == 0x003D or buf_8a[-1] == 0x0102:
                                 next_19_is_normal_move = True
                             if buf_8a[-1] == 0x0048:
                                 #next_19_is_backturned_move = True
@@ -884,7 +885,8 @@ class Movelist:
                         if next_instruction in [CC.ARG_8B]:
                             if buf_8b[-1] == 0x001f:
                                 next_19_is_while_running = True
-
+                            if buf_8b[-1] == 0x0041 or buf_8b[-1] == 0x002b:
+                                next_19_is_236 = True
                             if next_8b_is_input:
                                 button_code = buf_8b[-1]
                                 next_8b_is_input = False
@@ -899,12 +901,14 @@ class Movelist:
 
                         if dir == 0x0096 or dir == 0x0097:
                             dir = 'bt'
+                        if dir == 0xffff:
+                            dir = ''
 
-                        if buf_89[-1] == 0xffff: #dunno what these are, but they aren't moves???
-                            next_19_is_8way_move = False
-                            next_19_is_normal_move = False
+                        #if buf_89[-1] == 0xffff: #dunno what these are, but they aren't moves???
+                            #next_19_is_8way_move = False
+                            #next_19_is_normal_move = False
 
-                        elif next_19_is_normal_move or next_19_is_8way_move or next_19_is_while_running:
+                        if next_19_is_normal_move or next_19_is_8way_move or next_19_is_while_running or next_19_is_236:
                             if not while_crouching_flag and next_19_is_normal_move: #hack way to guess when we've reached while crouching moves
                                 if button_code in while_standing_signs:
                                     if button_code != while_standing_signs[-1]:
@@ -915,8 +919,10 @@ class Movelist:
                             command = '{}{}'.format(dir, button)
 
                             if next_19_is_while_running:
-                                command = 'WR {}'.format(command)
-                            elif next_19_is_8way_move:
+                                command = 'WR {}'.format(button)
+                            elif next_19_is_236:
+                                command = '236{}'.format(button)
+                            elif next_19_is_8way_move and dir != 5:
                                 command = '{}{}'.format(dir, command)
                             elif while_crouching_flag:
                                 pass #TODO: better way to detect WC?
@@ -937,6 +943,7 @@ class Movelist:
                             next_19_is_backturned_move = False
                             next_19_is_while_running = False
                             next_19_is_azwel_replacement = False
+                            next_19_is_236 = False
 
                         elif next_19_is_azwel_replacement:
                             next_19_is_azwel_replacement = False

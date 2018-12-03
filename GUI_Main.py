@@ -76,7 +76,7 @@ class GUI_Main(Tk):
 
         self.do_print_debug_values = BooleanVar()
         self.do_print_debug_values.set(False)
-        self.tools_menu.add_checkbutton(label='DEBUG: Print Every Frame (WARNING: CPU USAGE HIGH)', onvalue=True, offvalue=False, variable=self.do_print_debug_values)
+        #self.tools_menu.add_checkbutton(label='DEBUG: Print Every Frame (WARNING: CPU USAGE HIGH)', onvalue=True, offvalue=False, variable=self.do_print_debug_values)
 
         self.menu.add_cascade(label="Advanced Tools", menu=self.tools_menu)
 
@@ -216,9 +216,6 @@ class GUI_Main(Tk):
     def start_overlay(self):
         self.overlay = fdo.GUI_FrameDataOverlay(self, self.launcher)
         self.overlay.hide()
-
-
-
 
     def reboot_overlay(self):
         self.stop_overlay()

@@ -27,8 +27,14 @@ if __name__ == "__main__":
         (p1_input_address, 'p1_input', 2, []),
         (p2_input_address, 'p2_input', 2, []),
 
-        (p1_movelist_address, 'p1_movelist_address', 8, []),
-        (p2_movelist_address, 'p2_movelist_address', 8, []),
+        (p1_movelist_address, 'p1_movelist_address', 2, []),
+        (p2_movelist_address, 'p2_movelist_address', 2, []),
+
+        (p1_move_id_address, 'p1_move_id_address', 2, []),
+        (p2_move_id_address, 'p2_move_id_address', 2, []),
+
+        (p1_guard_damage_address, 'p1_guard_damage_address', 2, []),
+        (p2_guard_damage_address, 'p2_guard_damage_address', 2, []),
 
         (p1_startup_block_breadcrumb[0], 'p1_startup_block', 4, p1_startup_block_breadcrumb[1:]),
         (p2_startup_block_breadcrumb[0], 'p2_startup_block', 4, p2_startup_block_breadcrumb[1:]),

@@ -121,6 +121,7 @@ class HitLevel(Enum):
 
     low_37 = 0x37 #common #hits grounded
     low_13 = 0x13 #crouching low? #doesn't hit grounded
+    low_7 = 0x07 #unblockable #nightmare's charged stomp
 
     sm_5b = 0x5b
     sm_7f = 0x7F  # soul charge activation, also ivy backturned B+K
