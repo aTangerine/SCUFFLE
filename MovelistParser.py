@@ -337,6 +337,49 @@ class Cancel:
         else:
             return self.modified_bytes
 
+    def update_goto_instructions(self, new_bytes, old_bytes):
+        diff = len(new_bytes) - len(old_bytes)
+        i = 0
+        first_index = -1
+        while i < len(new_bytes) and i < len(old_bytes):
+            if new_bytes[i] != old_bytes[i]:
+                first_index = i
+                break
+            i += 1
+
+
+        if first_index == -1 or diff == 0:
+            return new_bytes
+        else:
+            updated_bytes = b''
+            z = 0
+            while z < len(new_bytes):
+                inst = new_bytes[z]
+                try:
+                    inst = CC(inst)
+                except:
+                    pass
+
+                if not inst in Movelist.THREE_BYTE_INSTRUCTIONS:
+                    updated_bytes += new_bytes[z:z+1]
+                    z += 1
+                else:
+                    if not inst in [CC.PEN_28, CC.PEN_29, CC.PEN_2A]:
+                        updated_bytes += new_bytes[z:z+3]
+                        z += 3
+                    else:
+                        updated_bytes += new_bytes[z:z+1]
+                        goto = b2i(new_bytes, z + 1, big_endian=True)
+                        if goto > first_index:
+                            goto += diff
+                        updated_bytes += goto.to_bytes(2, byteorder='big')
+                        z += 3
+            print(old_bytes)
+            print(new_bytes)
+            print(updated_bytes)
+            return updated_bytes
+
+
     def get_link_to_move_id(self, move_id):
         for link in self.links:
             if link.move_id == move_id:
@@ -802,16 +845,6 @@ class Movelist:
         do_replace_animation = False
         replace_bytes = b'\x85\x00\x00\x00'
 
-        moves = b''
-        for move in self.all_moves:
-            next_move = move.get_modified_bytes()
-
-            if do_replace_animation:
-                next_move = replace_bytes + next_move[len(replace_bytes):]
-
-            moves += next_move
-
-
         do_have_infinite_active_frames = False
 
         attacks = b''
@@ -826,11 +859,35 @@ class Movelist:
 
         misc = self.misc_bytes
 
+        cancel_offsets = [0,]
         cancels = b''
         for key in range(0, len(self.all_moves)):
-            cancels += self.move_ids_to_cancels[key].get_modified_bytes()
+            cancel = self.move_ids_to_cancels[key]
+            next_cancel = cancel.update_goto_instructions(cancel.get_modified_bytes(), cancel.bytes)
+            cancels += next_cancel
+            cancel_offsets.append(len(next_cancel))
+
+        CANCEL_ADDRESS_OFFSET = 0x38
+
+        starting_cancel_offset = self.all_moves[0].cancel_address
+        moves = b''
+        running_address = starting_cancel_offset
+        for i, move in enumerate(self.all_moves):
+            running_address += cancel_offsets[i]
+            next_move = move.get_modified_bytes()
+            cancel_address = (running_address).to_bytes(4, byteorder='little')
+            next_move = next_move[:CANCEL_ADDRESS_OFFSET ] + cancel_address + next_move[CANCEL_ADDRESS_OFFSET + 4:]
+
+
+            if do_replace_animation:
+                next_move = replace_bytes + next_move[len(replace_bytes):]
+
+            moves += next_move
+
+
 
         all_bytes =  header + moves + attacks + short + misc + cancels
+
         #with open('test.out', 'wb') as fw:
             #fw.write(all_bytes)
         return all_bytes
