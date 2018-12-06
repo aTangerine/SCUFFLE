@@ -233,12 +233,12 @@ class GUI_Main(Tk):
                 except:
                     self.move_viewer = None
 
-            if self.move_viewer.do_inject_movelist:
-                try:
+            try:
+                if self.move_viewer.do_inject_movelist:
                     self.launcher.game_reader.do_write_movelist = True
                     self.move_viewer.do_inject_movelist = False
-                except:
-                    self.move_viewer = None
+            except:
+                self.move_viewer = None
 
 
         if self.overlay != None:

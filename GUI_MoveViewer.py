@@ -20,9 +20,11 @@ class GUI_MoveViewer:
 
     def __init__(self, master):
         self.master = master
-        self.master.geometry(str(1850) + 'x' + str(990))
+        #self.master.geometry(str(1850) + 'x' + str(990))
         master.title("SCUFFLE Move Viewer")
         master.iconbitmap('Data/icon.ico')
+        s = Style()
+        bold_label_font = 'Consolas 10 bold'
 
         self.do_inject_movelist = False
 
@@ -35,39 +37,66 @@ class GUI_MoveViewer:
 
         self.master.columnconfigure(0, weight=1)
 
-        self.main_window = self.create_window_in_scrollable_viewport(master)
+        #self.main_window = self.create_window_in_scrollable_viewport(master)
+        self.main_window = Frame(master)
+        self.main_window.pack()
 
-        loader_frame = Frame(self.main_window)
+
+        s.configure('Loader.TFrame', background='#D1D1D1')
+        s.configure('TNotebook.Tab', font='Consolas 14')
+        loader_frame = Frame(self.main_window, style='Loader.TFrame')
         loader_frame.grid(sticky=N+W, row = 0, column=0)
 
-        self.label = Label(loader_frame, textvariable=self.movelist_name_var)
+
+
+        loader_frame_top = Frame(loader_frame)
+        loader_frame_bot = Frame(loader_frame)
+        loader_frame_hit = Frame(loader_frame)
+        loader_frame_clip = Frame(loader_frame)
+
+        loader_frame_top.grid(sticky=N + E + W, row=0, column=0, padx=5, pady=5)
+        loader_frame_bot.grid(sticky=N + E + W, row=1, column=0, padx=5, pady=5)
+        loader_frame_hit.grid(sticky=N + E + W, row=2, column=0, padx=5, pady=5)
+        loader_frame_clip.grid(sticky=N + E + W, row=3, column=0, padx=5, pady=5)
+
+        self.movelist_menu_label = Label(loader_frame_top, text="Movelist", font=bold_label_font)
+        self.movelist_menu_label.pack()
+
+
+        self.label = Label(loader_frame_top, textvariable=self.movelist_name_var)
         self.label.pack()
 
-
-        self.load_movelist_button = Button(loader_frame, text="Load Movelist", command=lambda: self.load_movelist_dialog())
+        self.load_movelist_button = Button(loader_frame_top, text="Load Movelist", command=lambda: self.load_movelist_dialog())
         self.load_movelist_button.pack()
 
-        self.save_movelist_button = Button(loader_frame, text="Save Movelist", command=lambda: self.save_movelist_dialog())
+        self.save_movelist_button = Button(loader_frame_top, text="Save Movelist", command=lambda: self.save_movelist_dialog())
         self.save_movelist_button.pack()
 
-        self.save_movelist_button = Button(loader_frame, text="Inject Movelist", command=lambda: self.inject_movelist_dialog())
+        self.save_movelist_button = Button(loader_frame_top, text="Inject Movelist", command=lambda: self.inject_movelist_dialog())
         self.save_movelist_button.pack()
 
         #self.close_button = Button(loader_frame, text="Close", command=master.quit)
         #self.close_button.pack()
 
-        display_frame = Frame(self.main_window)
+        #display_frame = Frame(self.main_window)
+        display_frame = Notebook(self.main_window)
         display_frame.grid(sticky=S + E + W, row = 0, column = 1)
 
         move_frame = Frame(display_frame)
-        move_frame.grid(sticky=N+E , row = 0, column = 0)
+        #move_frame.grid(sticky=N+E , row = 0, column = 0)
 
-        move_id_entry_container = Frame(move_frame)
+        move_id_entry_container = Frame(loader_frame_bot)
         move_id_entry_container.grid(row=0, column=0)
 
-        move_id_entry = Entry(move_id_entry_container)
+        move_id_frame_label = Label(move_id_entry_container, text="Move Id", font=bold_label_font)
+        move_id_frame_label.pack()
+
+        move_id_label_container = Frame(move_id_entry_container)
+        move_id_label_container.pack()
+
+        move_id_entry = Entry(move_id_label_container)
         move_id_entry.bind('<Return>', lambda x: self.load_moveid(move_id_entry.get()))
-        move_id_entry.pack()
+
 
 
 
@@ -82,13 +111,14 @@ class GUI_MoveViewer:
         self.load_encoded_button = Button(move_id_entry_container, text="Load (Encoded)", command=lambda: self.load_moveid(move_id_entry.get(), True))
         self.load_encoded_button.pack()
 
-        self.next_move_id_button = Button(move_id_entry_container, text="+", command=lambda: self.next_move_id_command())
-        self.prev_move_id_button = Button(move_id_entry_container, text="-", command=lambda: self.prev_move_id_command())
+        self.next_move_id_button = Button(move_id_label_container, text=">", width = 1, command=lambda: self.next_move_id_command())
+        self.prev_move_id_button = Button(move_id_label_container, text="<", width = 1, command=lambda: self.prev_move_id_command())
 
 
 
-        self.next_move_id_button.pack()
-        self.prev_move_id_button.pack()
+        self.next_move_id_button.grid(row=0, column=2)
+        move_id_entry.grid(row=0, column=1)
+        self.prev_move_id_button.grid(row=0, column=0)
 
         self.save_move = Button(move_id_entry_container, text="Save Changes", command=lambda: self.save_move_bytes_command())
         self.save_move.pack()
@@ -101,10 +131,15 @@ class GUI_MoveViewer:
 
 
         hitbox_frame = Frame(display_frame)
-        hitbox_frame.grid(sticky=N+E, row = 1, column = 0)
+        #hitbox_frame.grid(sticky=N+E, row = 1, column = 0)
 
-        hitbox_frame_header = Frame(hitbox_frame)
-        hitbox_frame_header.grid(sticky=N+W, row=0, column=0)
+        hitbox_frame_header = Frame(loader_frame_hit)
+        hitbox_frame_header.pack()
+        #hitbox_frame_header.grid(sticky=N+W+E, row=0, column=0)
+        #hitbox_frame_header.grid_columnconfigure(0, weight=1)
+
+        hitbox_frame_label = Label(hitbox_frame_header, text="Attacks", font=bold_label_font)
+        hitbox_frame_label.grid(sticky=N + W + E, row=0, column=0)
 
         self.hitbox_index = 0
         self.hitboxes_data = []
@@ -115,15 +150,20 @@ class GUI_MoveViewer:
         self.hitbox_id_var = StringVar()
         self.hitbox_id_var.set('-1')
 
-        self.next_hitbox_button = Button(hitbox_frame_header, text="+", command=lambda: self.next_hitbox_command())
-        self.prev_hitbox_button = Button(hitbox_frame_header, text="-", command=lambda: self.prev_hitbox_command())
-        self.hitbox_label = Label(hitbox_frame_header, textvariable = self.hitbox_index_var)
+
+        hitbox_iterator_frame = Frame(hitbox_frame_header)
+        self.next_hitbox_button = Button(hitbox_iterator_frame, text=">", width=1, command=lambda: self.next_hitbox_command())
+        self.prev_hitbox_button = Button(hitbox_iterator_frame, text="<", width=1, command=lambda: self.prev_hitbox_command())
+        self.hitbox_label = Label(hitbox_iterator_frame, textvariable = self.hitbox_index_var)
         self.hitbox_id_label = Label(hitbox_frame_header, textvariable=self.hitbox_id_var)
 
-        self.prev_hitbox_button.grid(sticky=N, row=3, column=0)
-        self.hitbox_label.grid(sticky=N, row=0, column=0)
-        self.next_hitbox_button.grid(sticky=N, row = 2, column=0)
-        self.hitbox_id_label.grid(sticky=N, row=1, column=0)
+        #hitbox_iterator_frame.grid_columnconfigure(1, weight=1)
+        self.prev_hitbox_button.grid(sticky=N, row=0, column=0)
+        self.hitbox_label.grid(sticky=N+E+W, row=0, column=1)
+        self.next_hitbox_button.grid(sticky=N, row = 0, column=2)
+
+        hitbox_iterator_frame.grid(sticky=N+E+W, row=1, column=0)
+        self.hitbox_id_label.grid(sticky=N+E+W, row=2, column=0)
 
 
         #self.hitbox_raw = Text(hitbox_frame, wrap='none', height=36, width=18)
@@ -139,7 +179,7 @@ class GUI_MoveViewer:
 
 
         self.cancel_frame = Frame(self.main_window)
-        self.cancel_frame.grid(sticky=W+E+N+S, row = 0, column = 3)
+        #self.cancel_frame.grid(sticky=W+E+N+S, row = 0, column = 3)
 
         self.cp = ScrolledTextPair(self.cancel_frame,  (70, 50), 40)
         self.cp.grid(sticky=N+W, row = 0, column = 0)
@@ -155,23 +195,30 @@ class GUI_MoveViewer:
         self.frame_data_intr.grid(sticky=W + E + N + S, row=0, column=0, columnspan=2)
 
         self.link_intr = Text(self.link_frame, width=80, height=18)
-        self.link_intr.grid(sticky=W + E + N + S, row=1, column=0)
+        #self.link_intr.grid(sticky=W + E + N + S, row=1, column=0)
 
 
 
-        self.clipboard_hitbox_button = Button(hitbox_frame_header, text="Copy Hitbox to Clipboard", command=lambda:GUI_MoveViewer.copy_to_clipboard_and_strip(self.hitbox_raw.get('1.0', END)))
-        self.clipboard_hitbox_button.grid(sticky=N+W+E, row=4, column=0)
+        self.clipboard_label = Label(loader_frame_clip, text="Cheat Engine", font = bold_label_font)
+        self.clipboard_label.grid(sticky=N+W+E, row=0, column=0)
 
-        self.clipboard_move_button = Button(move_id_entry_container, text="Copy Move to Clipboard", command=lambda: GUI_MoveViewer.copy_to_clipboard_and_strip(self.move_raw.get('1.0', END)))
-        self.clipboard_move_button.pack()
+        self.clipboard_move_button = Button(loader_frame_clip, text="Copy Move to Clipboard", command=lambda: GUI_MoveViewer.copy_to_clipboard_and_strip(self.move_raw.get('1.0', END)))
+        self.clipboard_move_button.grid(sticky=N + W + E, row=1, column=0)
 
-        self.clipboard_cancel_button = Button(self.link_frame, text="Copy Cancel to Clipboard", command=lambda: GUI_MoveViewer.copy_to_clipboard_and_strip(self.cancel_raw.get('1.0', END)))
-        self.clipboard_cancel_button.grid(sticky=N+W, row = 1, column =1)
+        self.clipboard_hitbox_button = Button(loader_frame_clip, text="Copy Hitbox to Clipboard", command=lambda: GUI_MoveViewer.copy_to_clipboard_and_strip(self.hitbox_raw.get('1.0', END)))
+        self.clipboard_hitbox_button.grid(sticky=N + W + E, row=2, column=0)
+
+        self.clipboard_cancel_button = Button(loader_frame_clip, text="Copy Cancel to Clipboard", command=lambda: GUI_MoveViewer.copy_to_clipboard_and_strip(self.cancel_raw.get('1.0', END)))
+        self.clipboard_cancel_button.grid(sticky=N + W + E, row=3, column=0)
 
         self.cancel_intr.tag_configure("bold", font="Helvetica 9 bold")
         self.cancel_intr.tag_configure("soulcharge", font="Helvetica 9 bold", foreground='#2C75FF')
 
         self.link_intr.tag_configure("bold", font="Helvetica 9 bold")
+
+        display_frame.add(move_frame, text='Move')
+        display_frame.add(hitbox_frame, text='Hitboxes')
+        display_frame.add(self.cancel_frame, text = 'Scripting')
 
 
     def create_window_in_scrollable_viewport(self, master):
@@ -207,23 +254,41 @@ class GUI_MoveViewer:
 
 
     def save_move_bytes_command(self):
-        raw = self.move_raw.get(1.0, END)
+
+        errors_enountered = False
+
+        move = self.movelist.all_moves[int(self.move_id_textvar.get().split(':')[1])]
+        errors_enountered = self.text_entry_to_bytes(self.move_raw, move, MovelistParser.Move.LENGTH)
+
+        if self.hitbox_index >= 0:
+            if len(move.attacks) > 0:
+                attack = move.attacks[self.hitbox_index]
+                errors_enountered = self.text_entry_to_bytes(self.hitbox_raw, attack, MovelistParser.Attack.LENGTH) or errors_enountered
+
+        if not errors_enountered:
+            self.inject_movelist_dialog()
+
+
+    def text_entry_to_bytes(self, text_widget, modified, bytes_length):
+        raw = text_widget.get(1.0, END)
         raw = raw.replace('\n', '').replace(' ', '')
-        LENGTH = MovelistParser.Move.LENGTH * 2
+        move_length = bytes_length * 2
         try:
-            self.move_raw.configure(background=GUI_MoveViewer.SAVE_SUCCESSFUL)
+            text_widget.configure(background=GUI_MoveViewer.SAVE_SUCCESSFUL)
             _ = int(raw, 16)
-            if len(raw) != LENGTH:
+            if len(raw) != move_length:
                 raise AssertionError()
 
             b = []
             for i in range(0, len(raw), 2):
-                b.append(int(raw[i:i+2], 16))
+                b.append(int(raw[i:i + 2], 16))
             modified_bytes = bytes(b)
-            self.movelist.all_moves[int(self.move_id_textvar.get().split(':')[1])].modified_bytes = modified_bytes
+            modified.modified_bytes = modified_bytes
+            return False
         except Exception as e:
             print(e)
-            self.move_raw.configure(background=GUI_MoveViewer.SAVE_FAILED)
+            text_widget.configure(background=GUI_MoveViewer.SAVE_FAILED)
+            return True
 
 
     def next_hitbox_command(self):
@@ -259,6 +324,7 @@ class GUI_MoveViewer:
         if id < len(self.movelist.all_moves) and id >= 0:
             self.move_id_textvar.set('move id: {}'.format(id))
             move = self.movelist.all_moves[id]
+
             bytes, guide = move.get_gui_guide()
 
             raw, intr = self.apply_guide(bytes, guide)

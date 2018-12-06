@@ -77,9 +77,6 @@ def GetBlockOfData(processHandle, address, size_of_block):
 
 def WriteBlockOfData(processHandle, address, block):
     data = block
-    #successful = WriteProcessMemory(processHandle, address, data, len(data), None)
-    print(hex(address))
-    dwNumberOfBytesWritten = WriteProcessMemory.argtypes[-1]()
     successful = WriteProcessMemory(processHandle, address, data, len(data), None)
     if not successful:
         e = GetLastError()
