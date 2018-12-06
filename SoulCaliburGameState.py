@@ -14,6 +14,8 @@ class SC6GameReader:
             self.p1_movelist = None
             self.p2_movelist = None
             self.timer = 0
+            self.do_write_movelist = False
+            self.is_movelist_new = False
 
         def IsForegroundPID(self):
             pid = c.wintypes.DWORD()
@@ -40,6 +42,13 @@ class SC6GameReader:
             self.p1_movelist = None
             self.p2_movelist = None
 
+        def MarkMovelistAsOld(self):
+            self.is_movelist_new = False
+
+        def HasNewMovelist(self):
+            return self.is_movelist_new
+
+
         def UpdateCurrentSnapshot(self):
             if not self.HasWorkingPID():
                 self.pid = PIDSearcher.GetPIDByName(b'SoulcaliburVI.exe')
@@ -49,7 +58,7 @@ class SC6GameReader:
                     print("Failed to find processid. Trying to acquire...")
 
             if self.HasWorkingPID():
-                process_handle = OpenProcess(0x10, False, self.pid)
+                process_handle = OpenProcess(0x10 | 0x20 | 0x08, False, self.pid) #0x10 = ReadProcess Privleges 0x20 = WriteProcess Privleges 0x08 = Operation Privleges
 
                 test_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.test_breadcrumb, 0x08)
                 test_value = GetValueFromDataBlock(test_block, 0x00)
@@ -69,6 +78,7 @@ class SC6GameReader:
                             p2_movelist_data = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, [AddressMap.p2_movelist_address], AddressMap.MOVELIST_BYTES)
                             self.p1_movelist = MovelistParser.Movelist(p1_movelist_data, 'p1')
                             self.p2_movelist = MovelistParser.Movelist(p2_movelist_data, 'p2')
+                            self.is_movelist_new = True
                         else:
                             return False
 
@@ -101,9 +111,13 @@ class SC6GameReader:
                     value_p1 = PlayerSnapshot(self.p1_movelist, p1_gdam, p1_move_id, p1_global)
                     value_p2 = PlayerSnapshot(self.p2_movelist, p2_gdam, p2_move_id, p2_global)
 
+                    if self.do_write_movelist:
+                        p1_movelist_address = GetValueFromAddress(process_handle, self.module_address + AddressMap.p1_movelist_address, is64bit=True)
+                        WriteBlockOfData(process_handle, p1_movelist_address, self.p1_movelist.generate_modified_movelist_bytes())
+                        self.do_write_movelist = False
+                        self.VoidPID()
+                        self.VoidMovelists()
 
-
-                    #if (len(self.snapshots) == 0) or (value_p1.movement_block.short_timer != self.snapshots[-1].p1.movement_block.short_timer):
                     self.snapshots.append(GameSnapshot(value_p1, value_p2, self.timer))
                     MAX_FRAMES_TO_KEEP = 1000
                     if len(self.snapshots) > MAX_FRAMES_TO_KEEP:
@@ -160,24 +174,7 @@ if __name__ == "__main__":
 
         if successful_update:
             new_state = myReader.snapshots[-1]
-            if old_state == None:
-                old_state = new_state
+            print("you're open {}".format(new_state.timer))
 
-            if new_state.p1.movement_block.short_timer != old_state.p1.movement_block.short_timer:
-                old_state = new_state
-                print(new_state)
-                if myReader.p1_movelist != None:
-                    pass
-                    #myReader.p1_movelist.print_cancel_bytes_by_move_id(new_state.p1.movement_block.movelist_id)
-                    #print(myReader.p1_movelist.parse_move(new_state.p1.movement_block.movelist_id))
-                    #print(myReader.p1_movelist.get_command_by_move_id(new_state.p1.movement_block.movelist_id))
-
-
-
-
-            #if v1.movement_block.movement_type != ov1.movement_block.movement_type or v2.movement_block.movement_type != ov2.movement_block.movement_type:
-                #ov1, ov2 = v1, v2
-                #print('{}, {} ({}, {})'.format(v1.movement_block.movement_type, v2.movement_block.movement_type, v1.startup_block.startup_frames, v2.startup_block.startup_frames))
-            #print('t')
         time.sleep(.005)
 

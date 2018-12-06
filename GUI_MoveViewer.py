@@ -8,12 +8,23 @@ import MovelistParser
 
 
 
+
+
+
 class GUI_MoveViewer:
+    SAVE_SUCCESSFUL = '#ddddff'
+    SAVE_FAILED = '#ffdddd'
+    MODIFICATIONS_MADE = '#dddddd'
+
+
+
     def __init__(self, master):
         self.master = master
         self.master.geometry(str(1850) + 'x' + str(990))
         master.title("SCUFFLE Move Viewer")
         master.iconbitmap('Data/icon.ico')
+
+        self.do_inject_movelist = False
 
         self.movelist_name_var = StringVar()
         self.movelist_name_var.set('???')
@@ -37,6 +48,9 @@ class GUI_MoveViewer:
         self.load_movelist_button.pack()
 
         self.save_movelist_button = Button(loader_frame, text="Save Movelist", command=lambda: self.save_movelist_dialog())
+        self.save_movelist_button.pack()
+
+        self.save_movelist_button = Button(loader_frame, text="Inject Movelist", command=lambda: self.inject_movelist_dialog())
         self.save_movelist_button.pack()
 
         #self.close_button = Button(loader_frame, text="Close", command=master.quit)
@@ -71,8 +85,13 @@ class GUI_MoveViewer:
         self.next_move_id_button = Button(move_id_entry_container, text="+", command=lambda: self.next_move_id_command())
         self.prev_move_id_button = Button(move_id_entry_container, text="-", command=lambda: self.prev_move_id_command())
 
+
+
         self.next_move_id_button.pack()
         self.prev_move_id_button.pack()
+
+        self.save_move = Button(move_id_entry_container, text="Save Changes", command=lambda: self.save_move_bytes_command())
+        self.save_move.pack()
 
         self.move_raw = Text(move_frame, height=24, width=12)
         self.move_raw .grid(sticky = N+W, row = 0, column = 1)
@@ -186,6 +205,25 @@ class GUI_MoveViewer:
         self.movelist = movelist
         self.movelist_name_var.set(self.movelist.name)
 
+
+    def save_move_bytes_command(self):
+        raw = self.move_raw.get(1.0, END)
+        raw = raw.replace('\n', '').replace(' ', '')
+        LENGTH = MovelistParser.Move.LENGTH * 2
+        try:
+            self.move_raw.configure(background=GUI_MoveViewer.SAVE_SUCCESSFUL)
+            _ = int(raw, 16)
+            if len(raw) != LENGTH:
+                raise AssertionError()
+
+            b = []
+            for i in range(0, len(raw), 2):
+                b.append(int(raw[i:i+2], 16))
+            modified_bytes = bytes(b)
+            self.movelist.all_moves[int(self.move_id_textvar.get().split(':')[1])].modified_bytes = modified_bytes
+        except Exception as e:
+            print(e)
+            self.move_raw.configure(background=GUI_MoveViewer.SAVE_FAILED)
 
 
     def next_hitbox_command(self):
@@ -304,7 +342,8 @@ class GUI_MoveViewer:
             with open(filename, 'wb') as fw:
                 fw.write(self.movelist.bytes)
 
-
+    def inject_movelist_dialog(self):
+        self.do_inject_movelist = True
 
     def apply_guide(self, bytes, guide):
         raw = ''

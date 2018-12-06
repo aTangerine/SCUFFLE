@@ -54,6 +54,7 @@ class Move:
     LENGTH = 0x48
     def __init__(self, bytes):
         self.bytes = bytes
+        self.modified_bytes = None
 
         self.animation = b4i(bytes, 0x00)
         self.unknown_04 = b4i(bytes, 0x04)
@@ -77,6 +78,12 @@ class Move:
 
         self.attack_index = b2i(bytes, 0x3C)
         #last 12 bytes are fffffff?
+
+    def get_modified_bytes(self):
+        if self.modified_bytes == None:
+            return self.bytes
+        else:
+            return self.modified_bytes
 
     def set_cancel(self, cancel):
         self.cancel = cancel
@@ -183,6 +190,7 @@ class Attack:
     LENGTH = 0x70
     def __init__(self, bytes):
         self.bytes = bytes
+        self.modified_bytes = None
 
         self.hitbox = b2i(self.bytes, 0) #hitbox limb?? 40 40 = right leg? 80 80 = left leg ??
         self.mystery_02 = b2i(self.bytes, 2) #Counter({128: 125, 0: 43, 17: 21, 2560: 18, 1: 14, 6144: 11, 2048: 10, 512: 10, 2: 9, 6784: 8, 51: 8, 4096: 6, 162: 4, 4608: 4, 34: 4, 513: 4, 640: 3, 641: 3, 3: 2, 129: 2, 3072: 1, 2099: 1})
@@ -250,7 +258,11 @@ class Attack:
         self.ffff_1 = b4i(self.bytes, 0x68)  # ????
         self.ffff_2 = b4i(self.bytes, 0x6C)  # ????
 
-
+    def get_modified_bytes(self):
+        if self.modified_bytes == None:
+            return self.bytes
+        else:
+            return self.modified_bytes
 
     def get_gui_guide(self):
         guide = [
@@ -311,12 +323,19 @@ class Cancel:
         self.movelist = movelist
         self.address = address
         self.bytes = bytes
+        self.modified_bytes = None
         if len(self.bytes) >= 3:
             self.type = int(self.bytes[2])
         else:
             self.type = -1
         self.move_id = move_id
         self.links = Movelist.links_from_bytes(self.bytes, self.movelist)
+
+    def get_modified_bytes(self):
+        if self.modified_bytes == None:
+            return self.bytes
+        else:
+            return self.modified_bytes
 
     def get_link_to_move_id(self, move_id):
         for link in self.links:
@@ -709,17 +728,19 @@ class Movelist:
 
         attack_block_start = b4i(raw_bytes, header_index_2)
         short_block_start = b4i(raw_bytes, header_index_3)
+        misc_block_start = b4i(raw_bytes, header_index_4)
 
         move_block_bytes = raw_bytes[move_block_start: attack_block_start]
 
         self.all_moves = []
-        for i in range(0, len(move_block_bytes) - Move.LENGTH, Move.LENGTH):
+        for i in range(0, len(move_block_bytes), Move.LENGTH):
             move = Move(move_block_bytes[i: i + Move.LENGTH])
             self.all_moves.append(move)
+        #print(hex(i))
 
         attack_block_bytes = raw_bytes[attack_block_start: short_block_start]
         self.all_attacks = []
-        for i in range(0, len(attack_block_bytes) - Attack.LENGTH, Attack.LENGTH):
+        for i in range(0, len(attack_block_bytes), Attack.LENGTH):
             attack = Attack(attack_block_bytes[i: i + Attack.LENGTH])
             self.all_attacks.append(attack)
 
@@ -768,6 +789,55 @@ class Movelist:
                     else:
                         self.move_ids_to_commands[cancelable_move_id] = '{}{}'.format(original_command, new_command)
                     move_ids_to_check.append(cancelable_move_id)
+
+        self.short_bytes = self.bytes[short_block_start : misc_block_start]
+        self.misc_bytes = self.bytes[misc_block_start : self.all_moves[0].cancel_address]
+        #print('{:x} : {:x} : {:x}'.format(short_block_start, misc_block_start, misc_block_start - short_block_start))
+        #self.generate_modified_movelist_bytes()
+
+    def generate_modified_movelist_bytes(self):
+        #header = b'\x99' + self.bytes[1:Movelist.HEADER_LENGTH]
+        header = self.bytes[:Movelist.HEADER_LENGTH]
+
+        do_replace_animation = False
+        replace_bytes = b'\x85\x00\x00\x00'
+
+        moves = b''
+        for move in self.all_moves:
+            next_move = move.get_modified_bytes()
+
+            if do_replace_animation:
+                next_move = replace_bytes + next_move[len(replace_bytes):]
+
+            moves += next_move
+
+
+        do_have_infinite_active_frames = False
+
+        attacks = b''
+        for attack in self.all_attacks:
+            next_attack = attack.get_modified_bytes()
+            if do_have_infinite_active_frames:
+                next_attack = next_attack[:0x36] + b'\x01' + next_attack[0x37:] #0x36 start active
+                next_attack = next_attack[:0x38] + b'\xFF' + next_attack[0x39:] #0x38 end active
+            attacks += next_attack
+
+        short = self.short_bytes
+
+        misc = self.misc_bytes
+
+        cancels = b''
+        for key in range(0, len(self.all_moves)):
+            cancels += self.move_ids_to_cancels[key].get_modified_bytes()
+
+        all_bytes =  header + moves + attacks + short + misc + cancels
+        #with open('test.out', 'wb') as fw:
+            #fw.write(all_bytes)
+        return all_bytes
+
+
+
+
 
     def get_command_by_move_id(self, move_id):
         if move_id in self.move_ids_to_commands:

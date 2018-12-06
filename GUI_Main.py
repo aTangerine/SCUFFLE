@@ -233,6 +233,13 @@ class GUI_Main(Tk):
                 except:
                     self.move_viewer = None
 
+            if self.move_viewer.do_inject_movelist:
+                try:
+                    self.launcher.game_reader.do_write_movelist = True
+                    self.move_viewer.do_inject_movelist = False
+                except:
+                    self.move_viewer = None
+
 
         if self.overlay != None:
             self.overlay.update_location()
@@ -253,13 +260,13 @@ class GUI_Main(Tk):
         elapsed_time = 1000 * (time2 - time1)
 
         if self.launcher.game_reader.HasWorkingPID():
-            #Update Move Viewer
-            if self.previous_working_pid == 10: #arbitrary number
+            if self.launcher.game_reader.HasNewMovelist():
                 if self.move_viewer != None:
                     movelist = self.launcher.game_reader.p1_movelist
                     if movelist != None:
                         try:
                             self.move_viewer.set_movelist(movelist)
+                            self.launcher.game_reader.MarkMovelistAsOld()
                         except:
                             self.move_viewer = None
                         self.previous_working_pid += 1

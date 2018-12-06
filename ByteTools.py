@@ -10,8 +10,12 @@ OpenProcess.argtypes = [w.DWORD,w.BOOL,w.DWORD]
 OpenProcess.restype = w.HANDLE
 
 ReadProcessMemory = k32.ReadProcessMemory
-ReadProcessMemory.argtypes = [w.HANDLE,w.LPCVOID,w.LPVOID,c.c_size_t,c.POINTER(c.c_size_t)]
+ReadProcessMemory.argtypes = [w.HANDLE, w.LPCVOID, w.LPVOID, c.c_size_t, c.POINTER(c.c_size_t)]
 ReadProcessMemory.restype = w.BOOL
+
+WriteProcessMemory = k32.WriteProcessMemory
+WriteProcessMemory.argtypes = [w.HANDLE, w.LPVOID, w.LPCVOID, c.c_size_t, c.POINTER(c.c_size_t)]
+WriteProcessMemory.restype = w.BOOL
 
 GetLastError = k32.GetLastError
 GetLastError.argtypes = None
@@ -71,6 +75,17 @@ def GetBlockOfData(processHandle, address, size_of_block):
     return data
 
 
+def WriteBlockOfData(processHandle, address, block):
+    data = block
+    #successful = WriteProcessMemory(processHandle, address, data, len(data), None)
+    print(hex(address))
+    dwNumberOfBytesWritten = WriteProcessMemory.argtypes[-1]()
+    successful = WriteProcessMemory(processHandle, address, data, len(data), None)
+    if not successful:
+        e = GetLastError()
+        print("Writing Block of Data Error: Code " + str(e))
+
+
 def GetValueFromDataBlock(block, offset, is_float=False, is_short=False, is_byte=False, debug_print_raw=False):
     address = offset
 
@@ -93,20 +108,11 @@ def GetValueFromDataBlock(block, offset, is_float=False, is_short=False, is_byte
         return struct.unpack('>H', b'\x00' + bytes)[0]
 
 
-'''def GetValueAtEndOfPointerTrail(self, processHandle, enum: NonPlayerDataAddressesEnum, isString):
-    addresses = NonPlayerDataAddressesTuples.offsets[enum]
-    value = self.module_address
-    for i, offset in enumerate(addresses):
-        if i + 1 < len(addresses):
-            value = self.GetValueFromAddress(processHandle, value + offset, is64bit=True)
-        else:
-            value = self.GetValueFromAddress(processHandle, value + offset, isString=isString)
-    return value'''
-
-
 def GetDataBlockAtEndOfPointerOffsetList(process_handle, starting_pointer, offsets, size_of_block):
     current_pointer = starting_pointer
     for i in range(len(offsets)):
         if i < len(offsets):
             current_pointer = GetValueFromAddress(process_handle, current_pointer + offsets[i], is64bit=True)
     return GetBlockOfData(process_handle, current_pointer, size_of_block)
+
+
