@@ -255,18 +255,22 @@ class GUI_MoveViewer:
 
     def save_move_bytes_command(self):
 
-        errors_enountered = False
+        errors_encountered = False
 
         move = self.movelist.all_moves[int(self.move_id_textvar.get().split(':')[1])]
-        errors_enountered = self.text_entry_to_bytes(self.move_raw, move, MovelistParser.Move.LENGTH)
+        errors_encountered = self.text_entry_to_bytes(self.move_raw, move, MovelistParser.Move.LENGTH)
 
         if self.hitbox_index >= 0:
             if len(move.attacks) > 0:
                 attack = move.attacks[self.hitbox_index]
-                errors_enountered = self.text_entry_to_bytes(self.hitbox_raw, attack, MovelistParser.Attack.LENGTH) or errors_enountered
+                errors_encountered = self.text_entry_to_bytes(self.hitbox_raw, attack, MovelistParser.Attack.LENGTH) or errors_encountered
 
-        if not errors_enountered:
+        cancel = move.cancel
+        errors_encountered = self.text_entry_to_bytes(self.cancel_raw, cancel, 0) or errors_encountered
+
+        if not errors_encountered:
             self.inject_movelist_dialog()
+
 
 
     def text_entry_to_bytes(self, text_widget, modified, bytes_length):
@@ -276,8 +280,9 @@ class GUI_MoveViewer:
         try:
             text_widget.configure(background=GUI_MoveViewer.SAVE_SUCCESSFUL)
             _ = int(raw, 16)
-            if len(raw) != move_length:
-                raise AssertionError()
+            if move_length > 0:
+                if len(raw) != move_length:
+                    raise AssertionError()
 
             b = []
             for i in range(0, len(raw), 2):
