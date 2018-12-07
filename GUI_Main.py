@@ -236,6 +236,7 @@ class GUI_Main(Tk):
             try:
                 if self.move_viewer.do_inject_movelist:
                     self.launcher.game_reader.do_write_movelist = True
+                    self.launcher.game_reader.p1_movelist = self.move_viewer.movelist
                     self.move_viewer.do_inject_movelist = False
             except:
                 self.move_viewer = None
