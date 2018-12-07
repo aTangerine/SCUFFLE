@@ -44,6 +44,9 @@ class GUI_MoveViewer:
 
         s.configure('Loader.TFrame', background='#D1D1D1')
         s.configure('TNotebook.Tab', font='Consolas 14')
+        s.configure('Success.TButton', background=GUI_MoveViewer.SAVE_SUCCESSFUL)
+        s.configure('Failure.TButton', background=GUI_MoveViewer.SAVE_FAILED)
+
         loader_frame = Frame(self.main_window, style='Loader.TFrame')
         loader_frame.grid(sticky=N+W, row = 0, column=0)
 
@@ -53,11 +56,13 @@ class GUI_MoveViewer:
         loader_frame_bot = Frame(loader_frame)
         loader_frame_hit = Frame(loader_frame)
         loader_frame_clip = Frame(loader_frame)
+        loader_frame_tools = Frame(loader_frame)
 
         loader_frame_top.grid(sticky=N + E + W, row=0, column=0, padx=5, pady=5)
         loader_frame_bot.grid(sticky=N + E + W, row=1, column=0, padx=5, pady=5)
         loader_frame_hit.grid(sticky=N + E + W, row=2, column=0, padx=5, pady=5)
         loader_frame_clip.grid(sticky=N + E + W, row=3, column=0, padx=5, pady=5)
+        loader_frame_tools.grid(sticky=N + E + W, row=4, column=0, padx=5, pady=5)
 
         self.movelist_menu_label = Label(loader_frame_top, text="Movelist", font=bold_label_font)
         self.movelist_menu_label.pack()
@@ -91,25 +96,22 @@ class GUI_MoveViewer:
         move_id_frame_label = Label(move_id_entry_container, text="Move Id", font=bold_label_font)
         move_id_frame_label.pack()
 
+        self.move_id_textvar = StringVar()
+        self.move_id_textvar.set('-')
+        self.move_id_label = Label(move_id_entry_container, textvariable=self.move_id_textvar, font = bold_label_font)
+        self.move_id_label.pack()
+
         move_id_label_container = Frame(move_id_entry_container)
         move_id_label_container.pack()
 
         move_id_entry = Entry(move_id_label_container)
         move_id_entry.bind('<Return>', lambda x: self.load_moveid(move_id_entry.get()))
 
-
-
-
-        self.move_id_textvar = StringVar()
-        self.move_id_textvar.set('-')
-        self.move_id_label = Label(move_id_entry_container, textvariable=self.move_id_textvar)
-        self.move_id_label.pack()
-
         self.load_button = Button(move_id_entry_container, text="Load", command=lambda: self.load_moveid(move_id_entry.get()))
         self.load_button.pack()
 
-        self.load_encoded_button = Button(move_id_entry_container, text="Load (Encoded)", command=lambda: self.load_moveid(move_id_entry.get(), True))
-        self.load_encoded_button.pack()
+        #self.load_encoded_button = Button(move_id_entry_container, text="Load (Encoded)", command=lambda: self.load_moveid(move_id_entry.get(), True))
+        #self.load_encoded_button.pack()
 
         self.next_move_id_button = Button(move_id_label_container, text=">", width = 1, command=lambda: self.next_move_id_command())
         self.prev_move_id_button = Button(move_id_label_container, text="<", width = 1, command=lambda: self.prev_move_id_command())
@@ -120,10 +122,11 @@ class GUI_MoveViewer:
         move_id_entry.grid(row=0, column=1)
         self.prev_move_id_button.grid(row=0, column=0)
 
-        self.save_move = Button(move_id_entry_container, text="Save Changes", command=lambda: self.save_move_bytes_command())
+        s.configure('Save.TButton', font='Consolas 14 bold')
+        self.save_move = Button(move_id_entry_container, text="Save Changes", style='Save.TButton', command=lambda: self.save_move_bytes_command())
         self.save_move.pack()
 
-        self.move_raw = Text(move_frame, height=24, width=12)
+        self.move_raw = Text(move_frame, height=24, width=12, undo=True, autoseparators=True, maxundo=-1)
         self.move_raw .grid(sticky = N+W, row = 0, column = 1)
 
         self.move_intr = Text(move_frame, wrap="none", height=24, width=32)
@@ -216,6 +219,51 @@ class GUI_MoveViewer:
 
         self.link_intr.tag_configure("bold", font="Helvetica 9 bold")
 
+
+
+
+        tool_label = Label(loader_frame_tools, text="Tools", font=bold_label_font)
+        tool_label.pack()
+
+        hex_to_dec = Frame(loader_frame_tools)
+        hex_to_dec.pack()
+        self.tool_hex_string = StringVar()
+        self.tool_dec_string = StringVar()
+        self.tool_hex_string.set('0xff')
+        self.tool_dec_string.set('255')
+        self.tool_hex_string.trace('w', self.hex_to_dec)
+        self.tool_dec_string.trace('w', self.dec_to_hex)
+
+        tool_hex = Entry(hex_to_dec, textvariable=self.tool_hex_string, width=10)
+        tool_dec = Entry(hex_to_dec, textvariable=self.tool_dec_string, width=10)
+        tool_hex.grid(row=0, column=0)
+        tool_dec.grid(row=0, column=1)
+
+        tool_hex_label = Label(hex_to_dec, text='HEX')
+        tool_dec_label = Label(hex_to_dec, text='DEC')
+        tool_hex_label.grid(row=1, column=0)
+        tool_dec_label.grid(row=1, column=1)
+
+        encode_to_decode = Frame(loader_frame_tools)
+        encode_to_decode.pack()
+        self.tool_decode_string = StringVar()
+        self.tool_encode_string= StringVar()
+        #self.tool_decode_string.set('0xff')
+        #self.tool_dec_string.set('255')
+        self.tool_decode_string.trace('w', self.encode)
+        self.tool_encode_string.trace('w', self.decode)
+        self.tool_decode = Entry(encode_to_decode, textvariable=self.tool_decode_string, width=10)
+        self.tool_encode = Entry(encode_to_decode, textvariable=self.tool_encode_string, width=10)
+        self.tool_encode.grid(row=0, column=0)
+        self.tool_decode.grid(row=0, column=1)
+
+        tool_encode_label = Label(encode_to_decode, text='Encoded')
+        tool_decode_label = Label(encode_to_decode, text='Decoded')
+        tool_encode_label.grid(row=1, column=0)
+        tool_decode_label.grid(row=1, column=1)
+
+
+
         display_frame.add(move_frame, text='Move')
         display_frame.add(hitbox_frame, text='Hitboxes')
         display_frame.add(self.cancel_frame, text = 'Scripting')
@@ -240,6 +288,39 @@ class GUI_MoveViewer:
         scrollable_frame.grid(sticky=N + S + E + W, row=0, column=0)
         scrollable_frame.create_window((0, 0), window=main_window, anchor="nw")
         return main_window
+
+    def hex_to_dec(self, *args):
+        try:
+            i = int(self.tool_hex_string.get(), 16)
+            self.tool_dec_string.set(i)
+        except:
+            pass
+
+    def dec_to_hex(self, *args):
+        try:
+            i = int(self.tool_dec_string.get(), 10)
+            self.tool_hex_string.set(hex(i))
+        except:
+            pass
+
+    def decode(self, *args):
+        try:
+            if self.master.focus_get() != self.tool_decode:
+                i = int(self.tool_encode_string.get(), 16)
+                i = MovelistParser.decode_move_id(i, self.movelist)
+                self.tool_decode_string.set(hex(i))
+        except:
+            pass
+
+    def encode(self, *args):
+        try:
+            if self.master.focus_get() != self.tool_encode:
+                i = int(self.tool_decode_string.get(), 16)
+                i = MovelistParser.encode_move_id(i, self.movelist)
+                self.tool_encode_string.set(hex(i))
+        except:
+            pass
+
 
     def load_movelist(self, path):
         try:
@@ -327,7 +408,7 @@ class GUI_MoveViewer:
             id = MovelistParser.decode_move_id(id, self.movelist)
 
         if id < len(self.movelist.all_moves) and id >= 0:
-            self.move_id_textvar.set('move id: {}'.format(id))
+            self.move_id_textvar.set(': {}'.format(id))
             move = self.movelist.all_moves[id]
 
             bytes, guide = move.get_gui_guide()
@@ -377,8 +458,8 @@ class GUI_MoveViewer:
             self.link_intr.insert(END, links)
             highlight_tag_and_remove(self.link_intr, '<b>', 'bold')
 
-            self.frame_data_intr.delete(1.0, END)
-            self.frame_data_intr.insert(END, ' | '.join([str(x) for x in move.get_frame_data()]))
+            #self.frame_data_intr.delete(1.0, END)
+            #self.frame_data_intr.insert(END, ' | '.join([str(x) for x in move.get_frame_data()]))
 
 
     def load_hitbox(self):
@@ -411,7 +492,7 @@ class GUI_MoveViewer:
             return
         else:
             with open(filename, 'wb') as fw:
-                fw.write(self.movelist.bytes)
+                fw.write(self.movelist.generate_modified_movelist_bytes())
 
     def inject_movelist_dialog(self):
         self.do_inject_movelist = True
@@ -455,9 +536,9 @@ class ScrolledTextPair(Frame):
 
 
         # Creating the widgets
-        self.left = Text(self, width = width_lr[0], wrap='none', height=h)
+        self.left = Text(self, width = width_lr[0], wrap='none', height=h,  undo=True, autoseparators=True, maxundo=-1)
         self.left.pack(side=LEFT, fill=BOTH, expand=True)
-        self.right = Text(self, width = width_lr[1], wrap='none', height=h)
+        self.right = Text(self, width = width_lr[1], wrap='none', height=h,  undo=True, autoseparators=True, maxundo=-1)
         self.right.pack(side=LEFT,  fill=BOTH, expand=True)
         self.scrollbar = Scrollbar(self)
         if not hide_scrollbar:

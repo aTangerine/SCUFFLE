@@ -802,7 +802,7 @@ class Movelist:
             try:
                 end = self.all_moves[i + 1].cancel_address
             except:
-                end = ca + 0x2000 #really we should parse to the ending 02 instruction here #wow there are some very long cancel blocks
+                end = ca + self.parse_cancel_bytes_to_end(raw_bytes[ca:])
             cancel = Cancel(self, raw_bytes[ca: end], ca, i)
             self.all_cancels[ca] = cancel
             self.move_ids_to_cancels[i] = cancel
@@ -837,6 +837,26 @@ class Movelist:
         self.misc_bytes = self.bytes[misc_block_start : self.all_moves[0].cancel_address]
         #print('{:x} : {:x} : {:x}'.format(short_block_start, misc_block_start, misc_block_start - short_block_start))
         #self.generate_modified_movelist_bytes()
+
+    def parse_cancel_bytes_to_end(self, bytes):
+        i = 0
+        while i < len(bytes):
+            inst = bytes[i]
+            try:
+                inst = CC(inst)
+            except:
+                pass
+
+            if inst == CC.END:
+                return (i + 1)
+
+            if inst in Movelist.THREE_BYTE_INSTRUCTIONS:
+                i += 3
+            else:
+                i += 1
+
+        return len(bytes)
+
 
     def generate_modified_movelist_bytes(self):
         #header = b'\x99' + self.bytes[1:Movelist.HEADER_LENGTH]
