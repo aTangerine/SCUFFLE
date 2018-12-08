@@ -76,9 +76,6 @@ class Move:
                 self.attack_indexes.append(attack_index)
             count += 1
 
-        self.attack_index = b2i(bytes, 0x3C)
-        #last 12 bytes are fffffff?
-
     def get_modified_bytes(self):
         if self.modified_bytes == None:
             return self.bytes
@@ -374,9 +371,6 @@ class Cancel:
                             goto += diff
                         updated_bytes += goto.to_bytes(2, byteorder='big')
                         z += 3
-            print(old_bytes)
-            print(new_bytes)
-            print(updated_bytes)
             return updated_bytes
 
 
@@ -545,23 +539,23 @@ class Cancel:
 
 
                     if first_arg == 0x07:
-                        list_of_bytes.append((current_bytes, 'CHANGE {} ({})'.format(state, state_args), index))
+                        list_of_bytes.append((current_bytes, 'SWITCH {} ({})'.format(state, state_args), index))
                     elif first_arg == 0x0d:
-                        list_of_bytes.append((current_bytes, 'CALL {} ({})'.format(state, state_args), index))
+                        list_of_bytes.append((current_bytes, 'ADD {} ({})'.format(state, state_args), index))
                     else:
                         list_of_bytes.append((current_bytes, 'STATE {} ?? ({}) '.format(state, state_args), index))
                     current_bytes =  b''
                 if inst == CC.EXE_19:
-                    list_of_bytes.append((current_bytes, 'type {} neutral cancel(???)'.format(first_arg), index))
+                    list_of_bytes.append((current_bytes, 'neutral cancel(???)'.format(first_arg), index))
                     current_bytes = b''
                 if inst == CC.EXE_13:
-                    list_of_bytes.append((current_bytes, 'yoshimitsu only ???'.format(first_arg), index))
+                    list_of_bytes.append((current_bytes, 'yoshimitsu only ??? backturned mantis stance?'.format(first_arg), index))
                     current_bytes = b''
                 if inst == CC.PEN_2A:
-                    list_of_bytes.append((current_bytes, 'IF 25->TRUE GOTO: {:04x}'.format(args), index))
+                    list_of_bytes.append((current_bytes, 'IF [last 25] GOTO: {:04x}'.format(args), index))
                     current_bytes = b''
                 if inst == CC.PEN_28:
-                    list_of_bytes.append((current_bytes, 'IF a5->TRUE GOTO: {:04x}'.format(args), index))
+                    list_of_bytes.append((current_bytes, 'IF [last a5] GOTO: {:04x}'.format(args), index))
                     current_bytes = b''
                 if inst == CC.PEN_29:
                     list_of_bytes.append((current_bytes, 'IF ??? GOTO{:04x}'.format(args), index))

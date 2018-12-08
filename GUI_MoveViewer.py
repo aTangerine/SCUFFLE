@@ -31,7 +31,7 @@ class GUI_MoveViewer:
         self.movelist_name_var = StringVar()
         self.movelist_name_var.set('???')
 
-        self.load_movelist('movelists/seong_mina_movelist.m0000')
+        #self.load_movelist('movelists/seong_mina_movelist.m0000')
 
         self.master.rowconfigure(0, weight=1)
 
@@ -126,11 +126,16 @@ class GUI_MoveViewer:
         self.save_move = Button(move_id_entry_container, text="Save Changes", style='Save.TButton', command=lambda: self.save_move_bytes_command())
         self.save_move.pack()
 
-        self.move_raw = Text(move_frame, height=24, width=12, undo=True, autoseparators=True, maxundo=-1)
-        self.move_raw .grid(sticky = N+W, row = 0, column = 1)
+        self.move_pair= ScrolledTextPair(move_frame, (12, 32), 24, True)
+        self.move_pair.grid(sticky=W, row=0, column=1)
+        self.move_raw = self.move_pair.left
+        self.move_intr = self.move_pair.right
 
-        self.move_intr = Text(move_frame, wrap="none", height=24, width=32)
-        self.move_intr.grid(sticky=N+W, row=0, column=2)
+        #self.move_raw = Text(move_frame, height=24, width=12, undo=True, autoseparators=True, maxundo=-1)
+        #self.move_raw .grid(sticky = N+W, row = 0, column = 1)
+
+        #self.move_intr = Text(move_frame, wrap="none", height=24, width=32)
+        #self.move_intr.grid(sticky=N+W, row=0, column=2)
 
 
         hitbox_frame = Frame(display_frame)
@@ -184,11 +189,11 @@ class GUI_MoveViewer:
         self.cancel_frame = Frame(self.main_window)
         #self.cancel_frame.grid(sticky=W+E+N+S, row = 0, column = 3)
 
-        self.cp = ScrolledTextPair(self.cancel_frame,  (70, 50), 40)
-        self.cp.grid(sticky=N+W, row = 0, column = 0)
+        self.cancel_pair = ScrolledTextPair(self.cancel_frame, (70, 50), 40)
+        self.cancel_pair.grid(sticky=N + W, row = 0, column = 0)
 
-        self.cancel_raw = self.cp.left
-        self.cancel_intr = self.cp.right
+        self.cancel_raw = self.cancel_pair.left
+        self.cancel_intr = self.cancel_pair.right
 
 
         self.link_frame = Frame(self.cancel_frame)
@@ -336,20 +341,32 @@ class GUI_MoveViewer:
 
     def save_move_bytes_command(self):
 
-        errors_encountered = False
+
 
         move = self.movelist.all_moves[int(self.move_id_textvar.get().split(':')[1])]
-        errors_encountered = self.text_entry_to_bytes(self.move_raw, move, MovelistParser.Move.LENGTH)
+        move_successful = self.text_entry_to_bytes(self.move_raw, move, MovelistParser.Move.LENGTH)
 
+        hitbox_successful = True
         if self.hitbox_index >= 0:
             if len(move.attacks) > 0:
                 attack = move.attacks[self.hitbox_index]
-                errors_encountered = self.text_entry_to_bytes(self.hitbox_raw, attack, MovelistParser.Attack.LENGTH) or errors_encountered
+                hitbox_successful = self.text_entry_to_bytes(self.hitbox_raw, attack, MovelistParser.Attack.LENGTH)
+
 
         cancel = move.cancel
-        errors_encountered = self.text_entry_to_bytes(self.cancel_raw, cancel, 0) or errors_encountered
+        cancel_successful = self.text_entry_to_bytes(self.cancel_raw, cancel, 0)
 
-        if not errors_encountered:
+        if move_successful:
+            self.move_pair.highlight_blue()
+        else:
+            self.move_pair.highlight_red()
+
+        if cancel_successful:
+            self.cancel_pair.highlight_blue()
+        else:
+            self.cancel_pair.highlight_red()
+
+        if not (move_successful and hitbox_successful and cancel_successful):
             self.inject_movelist_dialog()
 
 
@@ -359,7 +376,6 @@ class GUI_MoveViewer:
         raw = raw.replace('\n', '').replace(' ', '')
         move_length = bytes_length * 2
         try:
-            text_widget.configure(background=GUI_MoveViewer.SAVE_SUCCESSFUL)
             _ = int(raw, 16)
             if move_length > 0:
                 if len(raw) != move_length:
@@ -370,11 +386,10 @@ class GUI_MoveViewer:
                 b.append(int(raw[i:i + 2], 16))
             modified_bytes = bytes(b)
             modified.modified_bytes = modified_bytes
-            return False
+            return True
         except Exception as e:
             print(e)
-            text_widget.configure(background=GUI_MoveViewer.SAVE_FAILED)
-            return True
+            return False
 
 
     def next_hitbox_command(self):
@@ -449,8 +464,9 @@ class GUI_MoveViewer:
             highlight_tag_and_remove(self.cancel_intr, '<b>', 'bold')
 
 
-            GUI_MoveViewer.alternating_gray(self.cancel_raw)
-            GUI_MoveViewer.alternating_gray(self.cancel_intr)
+            self.move_pair.highlight_gray()
+            self.hitbox_pair.highlight_gray()
+            self.cancel_pair.highlight_gray()
 
 
             links = '\n'.join([str(x) for x in move.cancel.links])
@@ -509,13 +525,7 @@ class GUI_MoveViewer:
                 intr += 'ERROR\n'
         return raw, intr
 
-    #https://stackoverflow.com/questions/26348989/changing-background-color-for-every-other-line-of-text-in-a-tkinter-text-box-wid
-    def alternating_gray(text):
-        lastline = text.index("end-1c").split(".")[0]
-        tag = "odd"
-        for i in range(1, int(lastline)):
-            text.tag_add(tag, "%s.0" % i, "%s.0" % (i + 1))
-            tag = "even" if tag == "odd" else "odd"
+
 
     def copy_to_clipboard_and_strip(text):
             clip = Tk()
@@ -545,11 +555,17 @@ class ScrolledTextPair(Frame):
             self.scrollbar.pack(side=RIGHT, fill=Y)
 
         #Styling
-        self.left.tag_configure("even", background="#f0f0f0")
-        self.left.tag_configure("odd", background="#ffffff")
+        self.left.tag_configure("odd", background="#f0f0f0")
+        self.left.tag_configure("even", background="#ffffff")
+        self.left.tag_configure("red", background="#ffdddd")
+        self.left.tag_configure("blue", background="#ddddff")
+        self.left.tag_raise('sel')
 
-        self.right.tag_configure("even", background="#f0f0f0")
-        self.right.tag_configure("odd", background="#ffffff")
+        self.right.tag_configure("odd", background="#f0f0f0")
+        self.right.tag_configure("even", background="#ffffff")
+        self.right.tag_raise('sel')
+
+
 
         # Changing the settings to make the scrolling work
         self.scrollbar['command'] = self.on_scrollbar
@@ -567,7 +583,24 @@ class ScrolledTextPair(Frame):
         self.scrollbar.set(*args)
         self.on_scrollbar('moveto', args[0])
 
+    def highlight_gray(self):
+        ScrolledTextPair.alternating_tags(self.left, 'odd', 'even')
 
+    def highlight_blue(self):
+        ScrolledTextPair.alternating_tags(self.left, 'blue', 'even')
+
+    def highlight_red(self):
+        ScrolledTextPair.alternating_tags(self.left, 'red', 'even')
+
+    # https://stackoverflow.com/questions/26348989/changing-background-color-for-every-other-line-of-text-in-a-tkinter-text-box-wid
+    def alternating_tags(text, even, odd):
+        lastline = text.index("end-1c").split(".")[0]
+        tag = odd
+        for i in range(1, int(lastline)):
+            for t in ('red', 'blue', 'odd', 'even'):
+                text.tag_remove(t, "%s.0" % i, "%s.0" % (i + 1))
+            text.tag_add(tag, "%s.0" % i, "%s.0" % (i + 1))
+            tag = even if tag == odd else odd
 
 
 def highlight_tag_and_remove(tw, marker, highlight):
