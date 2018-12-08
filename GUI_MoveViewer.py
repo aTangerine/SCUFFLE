@@ -341,8 +341,6 @@ class GUI_MoveViewer:
 
     def save_move_bytes_command(self):
 
-
-
         move = self.movelist.all_moves[int(self.move_id_textvar.get().split(':')[1])]
         move_successful = self.text_entry_to_bytes(self.move_raw, move, MovelistParser.Move.LENGTH)
 
@@ -351,6 +349,10 @@ class GUI_MoveViewer:
             if len(move.attacks) > 0:
                 attack = move.attacks[self.hitbox_index]
                 hitbox_successful = self.text_entry_to_bytes(self.hitbox_raw, attack, MovelistParser.Attack.LENGTH)
+                if hitbox_successful:
+                    self.hitbox_pair.highlight_blue()
+                else:
+                    self.hitbox_pair.highlight_red()
 
 
         cancel = move.cancel
@@ -366,7 +368,7 @@ class GUI_MoveViewer:
         else:
             self.cancel_pair.highlight_red()
 
-        if not (move_successful and hitbox_successful and cancel_successful):
+        if move_successful and hitbox_successful and cancel_successful:
             self.inject_movelist_dialog()
 
 
