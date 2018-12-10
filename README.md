@@ -15,4 +15,4 @@ To build the project, make sure you have python 3.5 and pyinstaller and run the 
 
 # I want to know more!
 
-Check out https://www.youtube.com/watch?v=GjB-MRonAFc or read https://github.com/rougelite/SCUFFLE/blob/master/__HowTheMovelistBytesWork.md
+Check out https://www.youtube.com/watch?v=GjB-MRonAFc or read [How the Movelist is Parsed](__HowTheMovelistBytesWork.md)
