@@ -16,6 +16,7 @@ class SC6GameReader:
             self.timer = 0
             self.do_write_movelist = False
             self.is_movelist_new = False
+            self.consecutive_frames_of_zero_timer = 0
 
         def IsForegroundPID(self):
             pid = c.wintypes.DWORD()
@@ -63,10 +64,13 @@ class SC6GameReader:
                 test_block = GetValueFromAddress(process_handle, self.module_address + AddressMap.global_timer_address)
 
                 if test_block == 0: #not in a fight yet or application closed
-                    self.VoidPID()
-                    self.VoidMovelists()
+                    self.consecutive_frames_of_zero_timer += 1
+                    if self.consecutive_frames_of_zero_timer > 10:
+                        self.VoidPID()
+                        self.VoidMovelists()
                     return False
                 else:
+                    self.consecutive_frames_of_zero_timer = 0
                     if self.p1_movelist == None:
                         #movelist_sample = GetValueFromAddress(process_handle, AddressMap.p1_movelist_address, isString=True)
                         movelist_sample = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, [AddressMap.p1_movelist_address], 0x4)
