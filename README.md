@@ -12,3 +12,7 @@ Download the latest release from https://github.com/rougelite/SCUFFLE/releases. 
 SCUFFLE uses python 3.5 and strives to use only Standard Library modules so it should run with any 64-bit python 3.5. 32-bit Python (the default if you use the installer) probably won't work.
 
 To build the project, make sure you have python 3.5 and pyinstaller and run the the project_build.bat file.
+
+# I want to know more!
+
+Check out https://www.youtube.com/watch?v=GjB-MRonAFc or read [How the Movelist is Parsed](__HowTheMovelistBytesWork.md)
