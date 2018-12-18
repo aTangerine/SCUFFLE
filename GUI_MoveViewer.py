@@ -1,17 +1,38 @@
 import os
 from tkinter import *
 from tkinter.ttk import *
+import tkinter.font as tkf
 from tkinter.filedialog import askopenfilename
 from tkinter.filedialog import asksaveasfilename
 import MovelistParser
 
-
-
-
-
-
-
 class GUI_MoveViewer:
+
+    DISTINCT_COLORS = [
+        '#e6194b',
+        '#3cb44b',
+        '#ffe119',
+        '#4363d8',
+        '#f58231',
+        '#911eb4',
+        '#46f0f0',
+        '#f032e6',
+        '#bcf60c',
+        '#fabebe',
+        '#008080',
+        '#e6beff',
+        '#9a6324',
+        '#fffac8',
+        '#800000',
+        '#aaffc3',
+        '#808000',
+        '#ffd8b1',
+        '#000075',
+        '#808080',
+        '#ffffff',
+        '#000000'
+    ]
+
     def __init__(self, master):
         self.master = master
         #self.master.geometry(str(1850) + 'x' + str(990))
@@ -144,10 +165,11 @@ class GUI_MoveViewer:
         self.hitbox_raw = self.hitbox_pair.left
         self.hitbox_intr = self.hitbox_pair.right
 
-        self.cancel_pair = ScrolledTextPair(cancel_frame, (70, 50), 40)
-        self.cancel_pair.grid(sticky=N + W, row = 0, column = 0)
+        self.cancel_pair = ScrolledTextPair(cancel_frame, (70, 50), 40, add_canvas=True)
+        self.cancel_pair.grid(sticky=N + W, row = 0, column = 1)
 
         self.cancel_raw = self.cancel_pair.left
+
         self.cancel_intr = self.cancel_pair.right
         self.cancel_intr.tag_configure("bold", font="Helvetica 9 bold")
         self.cancel_intr.tag_configure("soulcharge", font="Helvetica 9 bold", foreground='#2C75FF')
@@ -352,7 +374,7 @@ class GUI_MoveViewer:
                 self.hitboxes_data.append((raw, intr, move.attack_indexes[i]))
             self.load_hitbox()
 
-            cancel_guide = move.cancel.get_gui_guide()
+            cancel_guide, goto_line_to_line = move.cancel.get_gui_guide()
             #for bytes in cancel_guide:
 
             raw = ''
@@ -375,8 +397,25 @@ class GUI_MoveViewer:
             self.hitbox_pair.highlight_gray()
             self.cancel_pair.highlight_gray()
 
+            if self.cancel_pair.canvas != None:
+                canvas = self.cancel_pair.canvas
+                canvas.delete(ALL)
+                h = self.cancel_pair.font_height
+                #canvas.config(width = (len(goto_line_to_line) + 2) * 4)
+                #canvas.config(width=60)
+                canvas.configure(scrollregion=(0, 0, 0, h * len(cancel_guide)))
+                i = 0
+                lanes = [-1] * len(GUI_MoveViewer.DISTINCT_COLORS)
+                for x, y in goto_line_to_line:
+                    my_lane = 0 #if we don't find a lane (unlikely) it all just kinda breaks
+                    for j, lane in enumerate(lanes):
+                        if x > lane:
+                            my_lane = j
+                            break
+                    lanes[my_lane] = y #reserving lane until we're done
 
-            links = '\n'.join([str(x) for x in move.cancel.links])
+                    canvas.create_rectangle(2 + my_lane*4, (h * x) - (h/2), 2 + (my_lane*4) + 2, (h * (y + 1)) - (h/2), fill=GUI_MoveViewer.DISTINCT_COLORS[my_lane], outline='black')
+                    i += 1
 
 
     def load_hitbox(self):
@@ -442,18 +481,39 @@ class GUI_MoveViewer:
 class ScrolledTextPair(Frame):
     '''Two Text widgets and a Scrollbar in a Frame'''
 
-    def __init__(self, master, width_lr, h, hide_scrollbar=False):
-        Frame.__init__(self, master) # no need for super
+    def __init__(self, master, width_lr, h, hide_scrollbar=False, add_canvas=False):
+        Frame.__init__(self, master, width=800, height=640)
 
 
         # Creating the widgets
         self.left = Text(self, width = width_lr[0], wrap='none', height=h,  undo=True, autoseparators=True, maxundo=-1)
-        self.left.pack(side=LEFT, fill=BOTH, expand=True)
+        self.font_height = tkf.Font(font=self.left['font']).metrics('linespace')
         self.right = Text(self, width = width_lr[1], wrap='none', height=h,  undo=True, autoseparators=True, maxundo=-1)
-        self.right.pack(side=LEFT,  fill=BOTH, expand=True)
         self.scrollbar = Scrollbar(self)
         if not hide_scrollbar:
             self.scrollbar.pack(side=RIGHT, fill=Y)
+        if add_canvas:
+            #self.canvas_frame = Frame(self, width=40, height=640)
+            #self.canvas_frame.pack_propagate(0)
+            #self.canvas_frame.pack(side=LEFT, fill=BOTH, expand=True)
+            self.canvas = Canvas(self, width=60, height = 640)
+            self.canvas.configure(background='white')
+
+            self.canvas.yview('moveto', '1.0')
+            self.pack_propagate(0)
+            self.canvas.pack(side=LEFT, fill=None, expand=False)
+            self.pack_propagate(1)
+            #self.canvas.create_rectangle(0,0, 20, 300, fill='red')
+
+            #self.canvas.create_window((0, 0), window=self.canvas_frame, anchor='nw')
+
+            # self.canvas.configure(scrollregion=(0,0, 40, 2000))
+            self.canvas.configure(scrollregion=self.canvas.bbox('all'))
+        else:
+            self.canvas = None
+
+        self.left.pack(side=LEFT, fill=BOTH, expand=True)
+        self.right.pack(side=LEFT, fill=BOTH, expand=True)
 
         #Styling
         self.left.tag_configure("odd", background="#f0f0f0")
@@ -470,11 +530,16 @@ class ScrolledTextPair(Frame):
         self.scrollbar['command'] = self.on_scrollbar
         self.left['yscrollcommand'] = self.on_textscroll
         self.right['yscrollcommand'] = self.on_textscroll
+        if add_canvas:
+            self.canvas['yscrollcommand'] = self.on_textscroll
 
     def on_scrollbar(self, *args):
         '''Scrolls both text widgets when the scrollbar is moved'''
         self.left.yview(*args)
         self.right.yview(*args)
+        if self.canvas != None:
+            self.canvas.yview(*args)
+
 
     def on_textscroll(self, *args):
         '''Moves the scrollbar and scrolls text widgets when the mousewheel

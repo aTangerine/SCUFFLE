@@ -60,10 +60,9 @@ class SC6GameReader:
             if self.HasWorkingPID():
                 process_handle = OpenProcess(0x10 | 0x20 | 0x08, False, self.pid) #0x10 = ReadProcess Privleges 0x20 = WriteProcess Privleges 0x08 = Operation Privleges
 
-                test_block = GetDataBlockAtEndOfPointerOffsetList(process_handle, self.module_address, AddressMap.test_breadcrumb, 0x08)
-                test_value = GetValueFromDataBlock(test_block, 0x00)
+                test_block = GetValueFromAddress(process_handle, self.module_address + AddressMap.global_timer_address)
 
-                if test_value == 0: #not in a fight yet or application closed
+                if test_block == 0: #not in a fight yet or application closed
                     self.VoidPID()
                     self.VoidMovelists()
                     return False
