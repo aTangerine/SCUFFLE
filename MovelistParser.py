@@ -90,7 +90,7 @@ class FrameData:
             c = FrameData.StringifyAdvantage(rec - c)
 
         #str = "{:^3}|{:^7}|{:^4}|{:^2}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|{}".format(id, '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12')
-        str = "{:^3}|{:^7}|{:^4}|{:^2}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|{}".format(
+        str = "{:^3}|{:^7}|{:^4}|{:^2}|{:^5}|{:^7}|{:^7}|{:^2}|{:^4}|{:^1}|{:^3}|{:^3}|{}".format(
             id,
             com[-7:],
             s,
@@ -102,6 +102,7 @@ class FrameData:
             '[gd]',#'{:^4}',
             act,
             t,
+            rec - 1,
             ' '.join(tf),
         )
         return str
@@ -474,6 +475,36 @@ class Cancel:
 
         return cancelable_frames
 
+    def get_basic_condition_index(self, target_index):
+        CONDITION_BREAKS = [CC.START, CC.PEN_2A, CC.PEN_28, CC.PEN_29, CC.EXE_19, CC.EXE_25, CC.EXE_13,]
+        condition = Condition(None, 0, len(self.bytes))
+        index = 0
+        condition_start = 0
+        while index < len(self.bytes):
+            try:
+                inst = CC(self.bytes[index])
+            except:
+                inst = self.bytes[index]
+
+            if not inst in Movelist.THREE_BYTE_INSTRUCTIONS:
+                index += 1
+            elif not inst in [CC.PEN_2A, CC.PEN_29, CC.PEN_28]:
+                index += 3
+            else:
+                dest = b2i(self.bytes, index + 1, big_endian=True)
+
+                if index + 3 <= target_index < dest + 7:
+                    req = [self.bytes[condition_start:index]]
+
+                    print(req)
+                    condition.add_requirements(req)
+                index += 3
+
+            if inst in CONDITION_BREAKS:
+                condition_start = index
+
+        return condition
+
     def get_conditions(self):
         instructions = []
         i = 0
@@ -641,12 +672,6 @@ class Cancel:
 
                 notes.append('{}[{}-{}]'.format(red_or_green, start, stop))
         return notes
-
-
-
-
-
-
 
 
     def get_gui_guide(self):
@@ -1441,7 +1466,7 @@ class Movelist:
                                     state = decode_move_id(state, movelist)
                                     break
 
-                        links.append(Link(index, conditions, args, state, ref_state, exe_type, sc_only, is_last_call))
+                        links.append(Link(index - len(args), conditions, args, state, ref_state, exe_type, sc_only, is_last_call))
                         #print('{} {} {}: ({})'.format(inst, int(bytes[index + 1]), int(bytes[index + 2]), state))
 
                         conditions = []
@@ -1613,10 +1638,10 @@ if __name__ == "__main__":
     #input_file = 'movelists/xianghua_movelist.byte.m0000' #these come from cheat engine, memory viewer -> memory regions -> (movelist address) . should be 0x150000 bytes
 
     #movelists = load_all_movelists()
-    movelists = [Movelist.from_file('movelists/tira.sc6_movelist')]
+    #movelists = [Movelist.from_file('movelists/tira.sc6_movelist')]
     #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
-    #movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
+    movelists = [Movelist.from_file('movelists/xianghua.sc6_movelist')]
     #movelists = [Movelist.from_file('movelists/mitsurugi_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/ivy_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/geralt_movelist.m0000')]
@@ -1666,3 +1691,7 @@ if __name__ == "__main__":
     #movelists[0].reverse_spider_crawl()
     movelists[0].print_all_frame_data()
 
+    cancel = movelists[0].all_moves[257].cancel
+    index = cancel.get_link_to_move_id(259).cancel_index
+    print(index)
+    print(cancel.get_basic_condition_index(index))
