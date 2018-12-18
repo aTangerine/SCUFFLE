@@ -74,6 +74,8 @@ class GUI_Main(Tk):
         self.do_show_all_hitbox_data.set(False)
         self.tools_menu.add_checkbutton(label='Show frame data for all hitboxes (useful for moves with \'tip\' properties)', onvalue=True, offvalue=False, variable=self.do_show_all_hitbox_data)
 
+        self.tools_menu.add_command(label="Dump all frame data to console", command=self.dump_frame_data)
+
         self.do_print_debug_values = BooleanVar()
         self.do_print_debug_values.set(False)
         #self.tools_menu.add_checkbutton(label='DEBUG: Print Every Frame (WARNING: CPU USAGE HIGH)', onvalue=True, offvalue=False, variable=self.do_print_debug_values)
@@ -158,6 +160,12 @@ class GUI_Main(Tk):
                 self.move_viewer = None
             self.move_viewer = GUI_MoveViewer.GUI_MoveViewer(Toplevel(self))
             self.move_viewer.set_movelist(self.launcher.game_reader.p1_movelist)
+        except Exception as e:
+            print(e)
+
+    def dump_frame_data(self):
+        try:
+            self.launcher.game_reader.p1_movelist.print_all_frame_data()
         except Exception as e:
             print(e)
 

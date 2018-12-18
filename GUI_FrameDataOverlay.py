@@ -20,7 +20,7 @@ class DataColumns(Enum):
     XXHITXX = 5
     COUNTER = 6
     DAMX = 7
-    GDAM = 8
+    GD = 8
     A = 9
     WHIFF = 10
     #BSTN = 7
@@ -40,7 +40,7 @@ DataColumnsToMenuNames = {
     DataColumns.XXHITXX : 'frame advantage when the move hits',
     DataColumns.COUNTER : 'frame advantage when the move counter hits',
     DataColumns.DAMX : 'the amount of damage listed for the move',
-    DataColumns.GDAM : 'amount of guard damage inflicted on block, all characters have a starting guard health of 240 points',
+    DataColumns.GD : 'amount of guard damage inflicted on block, all characters have a starting guard health of 240 points',
     DataColumns.A : 'The number of active frames, hitting an opponent with a later active frame is not reflected in the displayed frame data',
     DataColumns.WHIFF: 'total number of frames in the animation',
     #DataColumns.BSTN : 'amount of frames before defender recovers from blocking',

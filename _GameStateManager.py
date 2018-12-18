@@ -1,6 +1,7 @@
 import SoulCaliburGameState
 import time
 import GameplayEnums
+import MovelistParser
 from typing import List
 
 class GameStateManager:
@@ -121,37 +122,19 @@ class GameStateManager:
 
     def FrameStringFromMovelist(p_str, p : SoulCaliburGameState.PlayerSnapshot, move_ids, stuns, timer):
 
-        def pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act, rec, tf):
-            if cl == hl and c == h:
-                cl = ''
-                c = ''
-            else:
-                c = FrameAnalyzer.StringifyAdvantage(rec - c)
-
-            str = "FDO:{}:{:^3}|{:^7}|{:^4}|{:^2}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|{}".format(
-                p_str,
-                id,
-                p.movelist.get_command_by_move_id(id)[-7:],
-                s,
-                at,
-                '{}'.format(FrameAnalyzer.StringifyAdvantage(rec - b)),
-                '{} {}'.format(hl, FrameAnalyzer.StringifyAdvantage(rec - h)),
-                '{} {}'.format(cl, c),
-                d,
-                p.startup_block.guard_damage,
-                act,
-                t,
-                ' '.join(tf),
-            )
-            strings.append(str)
+        def pretty_frame_data_entry(fd : MovelistParser.FrameData):
+            guard_damage = p.startup_block.guard_damage
+            frame_string = 'FDO:{}:{}'.format(p_str, fd).replace('[gd]', '{:^2}'.format(guard_damage))
+            strings.append(frame_string)
 
         def no_hitbox_data():
-            t, s, b, hl, h, cl, c, d, at, act, rec, tf = (0, 0, 0, ' ', 0, ' ', 0, ' ', ' ', ' ', 0, [''])
+            com = p.movelist.get_command_by_move_id(id)
+            fd = MovelistParser.FrameData(id, com, 0, 0, 0, ' ', 0, ' ', 0, ' ', ' ', ' ', 0, [''])
 
             if move_ids[-1] >= 0 and move_ids[-1] < len(p.movelist.all_moves):
-                tf = p.movelist.all_moves[move_ids[-1]].cancel.get_technical_frames()
+                fd.notes = p.movelist.all_moves[move_ids[-1]].cancel.get_technical_frames()
 
-            pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act, rec, tf)
+            pretty_frame_data_entry(fd)
             return strings
 
 
@@ -170,11 +153,11 @@ class GameStateManager:
             else:
                 added_stun = False
                 for frame_data in frame_datas:
-                    t, s, b, hl, h, cl, c, d, at, act, rec, tf = frame_data
+                    fd = frame_data
                     if not added_stun:
-                        stuns.append((b, h, c, s, timer))
+                        stuns.append((fd.bstun, fd.hstun, fd.cstun, fd.imp, timer))
                         added_stun = True
-                    pretty_frame_data_entry(t, s, b, hl, h, cl, c, d, at, act, rec, tf)
+                    pretty_frame_data_entry(fd)
                 return strings
 
 

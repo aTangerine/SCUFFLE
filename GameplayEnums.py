@@ -127,6 +127,7 @@ class HitLevel(Enum):
     sm_7f = 0x7F  # soul charge activation, also ivy backturned B+K
 
     sl_1b = 0x1b
+    sl_31 = 0x1f
     sl_63 = 0x63
 
     throw = 0x81 #most throws

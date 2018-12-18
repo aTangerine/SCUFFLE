@@ -49,10 +49,76 @@ def decode_move_id(encoded_move_id, movelist):
         move_id += movelist.block_R_start
     return move_id
 
+class FrameData:
+    def __init__(self, id, com, t, startup, block_stun, hit_launch, hit_stun, counter_launch, counter_stun, damage, attack_type, active_frames, recovery, extra_info):
+        self.id = id
+        self.com = com
+        self.whiff = t
+        self.imp = startup
+        self.bstun = block_stun
+        self.hlaunch = hit_launch
+        self.hstun = hit_stun
+        self.claunch = counter_launch
+        self.cstun = counter_stun
+        self.dam = damage
+        self.attack_type = attack_type
+        self.active = active_frames
+        self.rec = recovery
+        self.notes = extra_info
+
+    def __repr__(self):
+        id = self.id
+        cl = self.claunch
+        c = self.cstun
+        hl = self.hlaunch
+        h = self.hstun
+        b = self.bstun
+
+        rec = self.rec
+        com = self.com
+        s = self.imp
+        at = self.attack_type
+        d = self.dam
+        act = self.active
+        t = self.whiff
+        tf = self.notes
+
+        if cl == hl and c == h:
+            cl = ''
+            c = ''
+        else:
+            c = FrameData.StringifyAdvantage(rec - c)
+
+        #str = "{:^3}|{:^7}|{:^4}|{:^2}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|{}".format(id, '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12')
+        str = "{:^3}|{:^7}|{:^4}|{:^2}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|{}".format(
+            id,
+            com[-7:],
+            s,
+            at,
+            '{}'.format(FrameData.StringifyAdvantage(rec - b)),
+            '{} {}'.format(hl, FrameData.StringifyAdvantage(rec - h)),
+            '{} {}'.format(cl, c),
+            d,
+            '[gd]',#'{:^4}',
+            act,
+            t,
+            ' '.join(tf),
+        )
+        return str
+
+    def StringifyAdvantage(f : int):
+        flipped = f * -1
+        if flipped >= 0:
+            return '+{}'.format(flipped)
+        else:
+            return '{}'.format(flipped)
 
 class Move:
     LENGTH = 0x48
-    def __init__(self, bytes):
+    def __init__(self, bytes, movelist, move_id):
+        self.movelist = movelist
+        self.move_id = move_id
+
         self.bytes = bytes
         self.modified_bytes = None
 
@@ -110,13 +176,6 @@ class Move:
         return startup
 
     def get_frame_data(self):
-        def pretty_advantage(f: int):
-            flipped = f * -1
-            if flipped >= 0:
-                return '+{}'.format(flipped)
-            else:
-                return '{}'.format(flipped)
-
         data = []
 
         cf = self.cancel.get_cancelable_frames()
@@ -130,8 +189,9 @@ class Move:
 
         for a in self.attacks:
             startup = a.startup
-            t = self.total_frames - startup
-            recovery = t - cf
+            t = self.total_frames - cf
+            recovery = t - startup
+
 
             block_stun = a.block_stun
             hit_stun = a.hit_stun
@@ -148,7 +208,9 @@ class Move:
 
             active_frames = a.active - a.startup + 1
 
-            data.append((t, startup + 1, block_stun, a.hit_launch, a.hit_stun, cl, counter_stun, a.damage, attack_type, active_frames, recovery, tf))
+            com = self.movelist.get_command_by_move_id(self.move_id)
+
+            data.append(FrameData(self.move_id, com, t, startup + 1, block_stun, a.hit_launch, a.hit_stun, cl, counter_stun, a.damage, attack_type, active_frames, recovery, tf))
         return data
 
     def get_gui_guide(self):
@@ -407,18 +469,118 @@ class Cancel:
             right_split = self.bytes.split(b'\x8b\x30\x20')[1]
             cancelable_frames = int(right_split[5]) #usually this is something like 89 00 c9 89 00 0a where we want the 0a
         except:
-            print('Unable to find cancelable frames for move {}'.format(self.move_id))
+            #print('Unable to find cancelable frames for move {}'.format(self.move_id))
             cancelable_frames = 0
 
         return cancelable_frames
+
+    def get_conditions(self):
+        instructions = []
+        i = 0
+        while i < len(self.bytes):
+            try:
+                inst = CC(self.bytes[i])
+            except:
+                inst = self.bytes[i]
+            if not (inst in Movelist.THREE_BYTE_INSTRUCTIONS):
+                i += 1
+                #throw away single variable instructions
+            else:
+                args = b2i(self.bytes, i+1, big_endian=True)
+                instructions.append((inst, args, i))
+                i += 3
+
+        conditions = []
+
+        counter = 0
+        for inst, arg, line in instructions:
+            if inst in [CC.PEN_2A, CC.PEN_29, CC.PEN_28]:
+                new_condition = Condition(inst, line, arg)
+                for cond in conditions:
+                    if cond.start <= line < cond.end:
+                        if cond.type == CC.PEN_28 or CC.PEN_29 :
+                            #the CC.PEN_2A conditions are slightly tricky so lets try throwing them away and see if that causes any issues
+                            new_condition.add_requirements(cond.requirements)
+                if inst == CC.PEN_28:
+                    if_instruction, if_arg, if_line = instructions[counter - 1]
+                    if if_instruction == CC.ARG_89 or if_instruction == CC.ARG_8B:
+                        new_condition.add_requirements([(self.bytes[if_line:if_line + 3])])
+                    elif if_instruction == CC.EXE_A5:
+                        instruction_length = if_arg & 0x00FF
+                        start_index = instructions[counter - (instruction_length + 1)][2]
+                        new_condition.add_requirements([(self.bytes[start_index:line])])
+                    else:
+                        print('Unexpected if instruction: {} {} {}'.format(if_instruction.name, if_arg, if_line))
+
+                conditions.append(new_condition)
+
+            counter += 1
+
+        byte_to_condition = {}
+        conditions.sort(key=lambda x: len(x.requirements), reverse=True)
+        for c in conditions:
+            for z in range(c.start, c.end, 1):
+                if not z in byte_to_condition:
+                    byte_to_condition[z] = c
+
+        return byte_to_condition
+
+    def parse_neutral_with_conditions(self):
+        move_ids_to_commands = {}
+        bytes_to_conditions = self.get_conditions()
+        i = 0
+        while_crouching = False
+        while i < len(self.bytes):
+            try:
+                inst = CC(self.bytes[i])
+            except:
+                inst = self.bytes[i]
+            if not inst in Movelist.THREE_BYTE_INSTRUCTIONS:
+                i += 1
+            else:
+                if inst == CC.EXE_19:
+                    instruction_length = b1i(self.bytes, i + 2)
+                    try:
+                        state_inst = CC(self.bytes[i-3])
+                        checked_instructions = instruction_length
+                        while checked_instructions > 0:
+                            if state_inst == CC.ARG_8B:
+                                state = b2i(self.bytes, i - 2 - ((instruction_length - checked_instructions) * 3), big_endian=True)
+                                #print(decode_move_id(state, self.movelist))
+                                if i in bytes_to_conditions:
+                                    com = bytes_to_conditions[i].get_command()
+                                    if while_crouching:
+                                        com = 'WC {}'.format(com)
+                                    #print(bytes_to_conditions[i])
+                                    move_ids_to_commands[state] = com
+                                break
+                            elif state_inst == CC.ARG_89:
+                                args = b2i(self.bytes, i - 2, big_endian=True)
+                                if args == 0x161:
+                                    pass
+                                    #while_crouching = True
+                                checked_instructions -= 1
+                            else:
+                                checked_instructions -= 1
+                        if checked_instructions <= 0:
+                            raise AssertionError()
+
+                    except:
+                        pass
+                        #print('unexpected state encountered while parsing for 19 {}'.format(self.bytes[i-3:i]))
+                        #print(Movelist.bytes_as_string(self.bytes[i - (instruction_length * 3):i + 3]))
+                i += 3
+        return move_ids_to_commands
+
+
 
     def get_technical_frames(self):
         infinite_set = (0x7FFF, 0x7600)
         notes = []
 
-        splits = self.bytes.split(b'\x8b\x30\x5d')#TC, TJ, and possibly airborne frames
+        splits = self.bytes.split(b'\x8b\x30\x5d')  # TC, TJ, and possibly airborne frames
         if len(splits) > 1:
-            for split in splits[1:]: #8b xx xx 89 xx xx 89 xx xx #either 89 can be replaced by an 8b 7f ff for the start/end of a move
+            for split in splits[1:]:  # 8b xx xx 89 xx xx 89 xx xx #either 89 can be replaced by an 8b 7f ff for the start/end of a move
                 type = b2i(split, 1, big_endian=True)
                 start = b2i(split, 4, big_endian=True)
                 stop = b2i(split, 7, big_endian=True)
@@ -436,9 +598,9 @@ class Cancel:
                     notes.append('TC[{}-{}]'.format(start, stop))
                 elif type == 4:
                     notes.append('TJ[{}-{}]'.format(start, stop))
-                elif type == 0x28: #airborne???
+                elif type == 0x28:  # airborne???
                     pass
-                elif type == 0x62: #even more airborne???
+                elif type == 0x62:  # even more airborne???
                     pass
 
         splits = self.bytes.split(b'\x8b\x30\x64')#GI frames
@@ -480,12 +642,19 @@ class Cancel:
                 notes.append('{}[{}-{}]'.format(red_or_green, start, stop))
         return notes
 
+
+
+
+
+
+
+
     def get_gui_guide(self):
         guide = []
 
         index = 0
         list_of_bytes = []
-        #descriptions = []
+        goto_blocks = []
         current_bytes = b''
 
         while index < len(self.bytes):
@@ -552,14 +721,17 @@ class Cancel:
                     list_of_bytes.append((current_bytes, 'yoshimitsu only ??? backturned mantis stance?'.format(first_arg), index))
                     current_bytes = b''
                 if inst == CC.PEN_2A:
-                    list_of_bytes.append((current_bytes, 'IF [last 25] GOTO: {:04x}'.format(args), index))
+                    list_of_bytes.append((current_bytes, 'GOTO: {:04x}'.format(args), index))
+                    goto_blocks.append((index, args))
                     current_bytes = b''
                 if inst == CC.PEN_28:
                     list_of_bytes.append((current_bytes, 'IF [last a5] GOTO: {:04x}'.format(args), index))
                     current_bytes = b''
+                    goto_blocks.append((index, args))
                 if inst == CC.PEN_29:
                     list_of_bytes.append((current_bytes, 'IF ??? GOTO{:04x}'.format(args), index))
                     current_bytes = b''
+                    goto_blocks.append((index, args))
 
             else:
                 index += 1
@@ -567,11 +739,80 @@ class Cancel:
                 current_bytes =  b''
 
         guide = []
+        index_to_line_number = {}
+        counter = 0
         last_i = 0
         for bytes, desc, i in list_of_bytes:
             guide.append((Movelist.bytes_as_string(bytes), '{:04x}: {}'.format(last_i, desc)))
+            for j in range(last_i, i):
+                index_to_line_number[j] = counter
             last_i = i
-        return guide
+            counter += 1
+        index_to_line_number[i] = counter - 1
+
+        goto_line_to_line = []
+        for x, y in goto_blocks:
+            goto_line_to_line.append((index_to_line_number[x], index_to_line_number[y]))
+        #print(goto_line_to_line)
+
+        return guide, goto_line_to_line
+
+class Condition:
+    def __init__(self, type : CC, start, end):
+        self.type = type
+        self.start = start
+        self.end = end
+        self.requirements = []
+
+    def __repr__(self):
+        set_as_string = ' | '.join([Movelist.bytes_as_string(x) for x in self.requirements])
+        repr = '{} {}-{} : {}'.format(self.type, self.start, self.end, set_as_string)
+        return repr
+
+    def add_requirements(self, new_requirement):
+        for element in new_requirement:
+            requirement = element
+            if not requirement in self.requirements:
+                self.requirements.append(requirement)
+
+    def get_command(self):
+        dir = ''
+        for t in reversed(self.requirements):
+            arg = Condition.get_arg_if_match(t, CC.ARG_89)
+            if arg != None:
+                dir = arg
+                break
+        if not dir in range(1, 10, 1):
+            dir = '?'
+
+        button = ''
+        for t in reversed(self.requirements):
+            arg = Condition.get_arg_if_match(t, CC.ARG_8B)
+            if arg != None:
+                try:
+                    button = PaddedButton(arg).name
+                except:
+                    button = '???'
+                break
+
+
+
+        return '{} {}'.format(dir, button)
+
+
+
+    def get_arg_if_match(t, cc):
+        if len(t) == 3:
+            try:
+                inst = CC(t[0])
+                if inst == cc:
+                    args = b2i(t, 1, big_endian=True)
+                    return args
+            except:
+                pass
+        return None
+
+
 
 
 class Link:
@@ -770,9 +1011,11 @@ class Movelist:
         move_block_bytes = raw_bytes[move_block_start: attack_block_start]
 
         self.all_moves = []
+        counter = 0
         for i in range(0, len(move_block_bytes), Move.LENGTH):
-            move = Move(move_block_bytes[i: i + Move.LENGTH])
+            move = Move(move_block_bytes[i: i + Move.LENGTH], self, counter)
             self.all_moves.append(move)
+            counter += 1
         #print(hex(i))
 
         attack_block_bytes = raw_bytes[attack_block_start: short_block_start]
@@ -802,6 +1045,7 @@ class Movelist:
             self.move_ids_to_cancels[i] = cancel
             self.all_moves[i].set_cancel(cancel)
 
+        #self.move_ids_to_commands = self.alt_parse_neutral()
         self.move_ids_to_commands = self.parse_neutral()
         move_ids_to_check = list(self.move_ids_to_commands.keys())
         self.nodes = []
@@ -850,6 +1094,13 @@ class Movelist:
                 i += 1
 
         return len(bytes)
+
+    def print_all_frame_data(self):
+        for move in self.all_moves:
+            if 255 < move.move_id < self.block_Q_length:
+                for data in move.get_frame_data():
+                    print(data)
+
 
 
     def generate_modified_movelist_bytes(self):
@@ -962,6 +1213,16 @@ class Movelist:
                 print ('{} {}'.format(type_code, input_code), file=sys.stderr)
                 raise e
 
+
+    def alt_parse_neutral(self):
+        cancels = [x for x in self.all_cancels.values() if x.type >= 4]  # less hackish way to find neutral
+        move_ids_to_commands = {}
+        for cancel in cancels:
+            mtc = cancel.parse_neutral_with_conditions()
+            for key, value in mtc.items():
+                if not key in move_ids_to_commands:
+                    move_ids_to_commands[key] = value
+        return move_ids_to_commands
 
     def parse_neutral(self):
         cancels = [x for x in self.all_cancels.values() if x.type >= 4] #less hackish way to find neutral
@@ -1351,8 +1612,8 @@ if __name__ == "__main__":
 
     #input_file = 'movelists/xianghua_movelist.byte.m0000' #these come from cheat engine, memory viewer -> memory regions -> (movelist address) . should be 0x150000 bytes
 
-    movelists = load_all_movelists()
-    #movelists = [Movelist.from_file('movelists/tira_movelist.m0000')]
+    #movelists = load_all_movelists()
+    movelists = [Movelist.from_file('movelists/tira.sc6_movelist')]
     #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/xianghua_movelist.m0000')]
@@ -1377,12 +1638,15 @@ if __name__ == "__main__":
         if cancel.type >= 8:
             print(cancel.move_id)
         for link in cancel.links:
-            if link.move_id == 464:
+            if link.move_id == 364:
                 print(cancel.move_id)
                 print(link)
 
 
-
+    cancel = movelists[0].all_moves[2433].cancel
+    #for c in cancel.get_conditions():
+        #print(c)
+    print(cancel.parse_neutral_with_conditions())
     '''true_counter = 0
     total_counter = 0
     for move in movelists[0].all_moves:
@@ -1400,5 +1664,5 @@ if __name__ == "__main__":
 
     #movelists[0].alt_parse(2345)
     #movelists[0].reverse_spider_crawl()
-
+    movelists[0].print_all_frame_data()
 
