@@ -92,7 +92,8 @@ class GameStateManager:
 
     def create_frame_entry(self, name, p, record, bhc_stuns, times, movelist):
         id = p.movement_block.movelist_id
-        record.append(id)
+        if len(record) == 0 or record[-1] != id:
+            record.append(id)
         #bhc_stuns.append((0, 0, 0))
         #if id != 0x59 and id <= movelist.block_Q_length:  # 0x59 is the 'coming to a stop' move_id from 8 way run and above q_length are 'imaginary' moves
         if (id >= 0x0100 and id <= movelist.block_Q_length) or id == 212 or id == 214: #212 is soul charge, the only interesting move below 0x0100
@@ -129,10 +130,23 @@ class GameStateManager:
 
         def no_hitbox_data():
             com = p.movelist.get_command_by_move_id(id)
-            fd = MovelistParser.FrameData(id, com, 0, 0, 0, ' ', 0, ' ', 0, ' ', ' ', ' ', 0, [''])
+            fd = MovelistParser.FrameData(id, com, 0, 0, 0, ' ', 0, ' ', 0, ' ', ' ', ' ', 0, 0, [''])
 
             if move_ids[-1] >= 0 and move_ids[-1] < len(p.movelist.all_moves):
-                fd.notes = p.movelist.all_moves[move_ids[-1]].cancel.get_technical_frames()
+                move = p.movelist.all_moves[move_ids[-1]]
+                fd.notes = move.cancel.get_technical_frames()
+                cf = move.cancel.get_cancelable_frames()
+                total = move.total_frames
+                shortcut_links = []
+                for link in move.cancel.links:
+                    if link.is_shortcut:
+                        shortcut_links.append(link)
+                #if len(shortcut_links) > 0:
+                    #fd.notes += ['x{}'.format('/'.join(['{}'.format(x.leave_on) for x in shortcut_links]))]
+                #else:
+                fd.whiff = '{}'.format(total - cf)
+
+            fd.delta = delta
 
             pretty_frame_data_entry(fd)
             return strings
@@ -141,23 +155,67 @@ class GameStateManager:
 
         id = p.movement_block.movelist_id
         move = p.movelist.all_moves[id]
+
+        delta = 0
+        if len(move_ids) > 1 and move_ids[-2] < len(p.movelist.all_moves):
+            try:
+                old_move = p.movelist.all_moves[move_ids[-2]]
+                old_link = old_move.cancel.get_link_to_move_id(move_ids[-1])
+                leave = old_link.leave_on
+                enter = old_link.enter_in
+                diff = leave - enter
+                if len(old_move.attacks) > 0:
+                    old_startup = old_move.attacks[0].startup
+                    old_block_stun = old_move.attacks[0].block_stun
+                else:
+                    old_block_stun = 0
+                    old_startup = 0
+                    if len(move_ids) > 2 and move_ids[-3] < len(p.movelist.all_moves):
+                        older_move = p.movelist.all_moves[move_ids[-3]]
+                        older_link = older_move.cancel.get_link_to_move_id(move_ids[-2])
+                        if len(older_move.attacks) > 0:
+                            old_startup = older_move.attacks[0].startup
+                            old_block_stun = older_move.attacks[0].block_stun
+                            #leave += older_link.leave_on
+                            #enter += older_link.enter_in
+                            older_diff = older_link.leave_on - older_link.enter_in
+                            print('2:{} 1:{} s:{} b:{}'.format(diff, older_diff, old_startup, old_block_stun))
+                            diff += (older_diff)
+
+
+
+                delta = diff - old_startup - old_block_stun
+                #if not old_link.is_shortcut:
+                #delta -= enter
+            except Exception as e:
+                pass
+                #print(e)
+                print("Couldn't find route from {} to {}".format(move_ids[-2], move_ids[-1]))
+
+
+
         strings = []
 
         if id >= len(p.movelist.all_moves):
             return no_hitbox_data()
 
         else:
-            frame_datas = move.get_frame_data()
+            frame_datas = move.get_frame_data(delta=delta)
             if len(frame_datas) == 0:
                 return no_hitbox_data()
             else:
                 added_stun = False
+                counter = 1
                 for frame_data in frame_datas:
                     fd = frame_data
                     if not added_stun:
                         stuns.append((fd.bstun, fd.hstun, fd.cstun, fd.imp, timer))
                         added_stun = True
+                    if len(frame_datas) > 1:
+                        #fractions = {(1, 2) : '⅓', (1, 2) : '⅓',}
+                        fd.notes.append('½')#.format(counter, len(frame_datas)))
                     pretty_frame_data_entry(fd)
+                    counter += 1
                 return strings
 
 

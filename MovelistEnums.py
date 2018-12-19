@@ -19,7 +19,7 @@ class Button(Enum):
 
 
 class PaddedButton(Enum):
-    UNK = 0xAAAA
+    U = 0xAAAA
     RE = 0xAAAB
 
     A = 0x0001

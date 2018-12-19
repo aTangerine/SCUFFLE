@@ -24,10 +24,11 @@ class DataColumns(Enum):
     A = 9
     WHF = 10
     REC = 11
+    GAP = 12
     #BSTN = 7
     #HSTN = 8
     #CSTN = 9
-    NOTE = 12
+    NOTE = 13
 
     def config_name():
         return "DataColumns"
@@ -45,6 +46,7 @@ DataColumnsToMenuNames = {
     DataColumns.A : 'The number of active frames, hitting an opponent with a later active frame is not reflected in the displayed frame data',
     DataColumns.WHF: 'total number of frames in the animation',
     DataColumns.REC: 'number of frames after impact but before returning to neutral',
+    DataColumns.GAP: 'number of frames between the impact of previous move and impact of this move',
     #DataColumns.BSTN : 'amount of frames before defender recovers from blocking',
     #DataColumns.HSTN : 'amount of frames before defender recovers from being hit',
     #DataColumns.CSTN : 'amount of frames before defender recovers from being counter hit',

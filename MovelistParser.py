@@ -7,6 +7,7 @@ see HowTheMovelistBytesWork.md for a full description of how the movelist is par
 import struct
 from MovelistEnums import *
 import GameplayEnums
+import copy
 
 def b4i (bytes, index : int):
     return struct.unpack('I', bytes[index: index + 4])[0]
@@ -50,7 +51,7 @@ def decode_move_id(encoded_move_id, movelist):
     return move_id
 
 class FrameData:
-    def __init__(self, id, com, t, startup, block_stun, hit_launch, hit_stun, counter_launch, counter_stun, damage, attack_type, active_frames, recovery, extra_info):
+    def __init__(self, id, com, t, startup, block_stun, hit_launch, hit_stun, counter_launch, counter_stun, damage, attack_type, active_frames, recovery, delta, extra_info):
         self.id = id
         self.com = com
         self.whiff = t
@@ -64,6 +65,7 @@ class FrameData:
         self.attack_type = attack_type
         self.active = active_frames
         self.rec = recovery
+        self.delta = delta
         self.notes = extra_info
 
     def __repr__(self):
@@ -89,8 +91,13 @@ class FrameData:
         else:
             c = FrameData.StringifyAdvantage(rec - c)
 
+
+        gap = 0
+        if self.delta != 0:
+            gap = self.imp + self.delta - 1
+
         #str = "{:^3}|{:^7}|{:^4}|{:^2}|{:^7}|{:^7}|{:^7}|{:^4}|{:^4}|{:^1}|{:^4}|{}".format(id, '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12')
-        str = "{:^3}|{:^7}|{:^4}|{:^2}|{:^5}|{:^7}|{:^7}|{:^2}|{:^4}|{:^1}|{:^3}|{:^3}|{}".format(
+        str = "{:^3}|{:^7}|{:^4}|{:^2}|{:^5}|{:^7}|{:^7}|{:^2}|{:^4}|{:^1}|{:^3}|{:^3}|{:^3}|{}".format(
             id,
             com[-7:],
             s,
@@ -103,6 +110,7 @@ class FrameData:
             act,
             t,
             rec - 1,
+            gap,
             ' '.join(tf),
         )
         return str
@@ -176,7 +184,7 @@ class Move:
         startup = self.cancel.get_fastest_exit(self.total_frames)
         return startup
 
-    def get_frame_data(self):
+    def get_frame_data(self, delta = 0):
         data = []
 
         cf = self.cancel.get_cancelable_frames()
@@ -211,7 +219,7 @@ class Move:
 
             com = self.movelist.get_command_by_move_id(self.move_id)
 
-            data.append(FrameData(self.move_id, com, t, startup + 1, block_stun, a.hit_launch, a.hit_stun, cl, counter_stun, a.damage, attack_type, active_frames, recovery, tf))
+            data.append(FrameData(self.move_id, com, t, startup + 1, block_stun, a.hit_launch, a.hit_stun, cl, counter_stun, a.damage, attack_type, active_frames, recovery, delta, tf))
         return data
 
     def get_gui_guide(self):
@@ -389,13 +397,30 @@ class Cancel:
         else:
             self.type = -1
         self.move_id = move_id
-        self.links = Movelist.links_from_bytes(self.bytes, self.movelist)
+        self.links = Movelist.links_from_bytes(self, self.movelist)
 
     def get_modified_bytes(self):
         if self.modified_bytes == None:
             return self.bytes
         else:
             return self.modified_bytes
+
+    def condense_all_shortcuts(self):
+        extra_links = []
+        for link in self.links:
+            if link.is_shortcut:
+                extra_links.append((link, self.movelist.move_ids_to_cancels[link.move_id].links))
+                #TODO: replace 8a arguments with passed in arguments from original link?
+
+        for shortcut_link, link_list in extra_links:
+            for link in link_list:
+                copy_link = copy.copy(link)
+                copy_link.leave_on = shortcut_link.leave_on
+                copy_link.enter_in = shortcut_link.enter_in
+                self.links.append(copy_link)
+                #if self.move_id == 424:
+                    #print(link)
+
 
     def update_goto_instructions(self, new_bytes, old_bytes):
         diff = len(new_bytes) - len(old_bytes)
@@ -475,7 +500,7 @@ class Cancel:
 
         return cancelable_frames
 
-    def get_basic_condition_index(self, target_index):
+    def get_basic_condition_by_index(self, target_index):
         CONDITION_BREAKS = [CC.START, CC.PEN_2A, CC.PEN_28, CC.PEN_29, CC.EXE_19, CC.EXE_25, CC.EXE_13,]
         condition = Condition(None, 0, len(self.bytes))
         index = 0
@@ -492,11 +517,18 @@ class Cancel:
                 index += 3
             else:
                 dest = b2i(self.bytes, index + 1, big_endian=True)
+                '''while (dest + 6 < len(self.bytes)):
+                    try:
+                        if CC(self.bytes[dest + 3]) in [CC.PEN_2A, CC.PEN_29, CC.PEN_28]:
+                            dest += b2i(self.bytes, dest + 4, big_endian=True)
+                        else:
+                            break
+                    except:
+                        break'''
 
                 if index + 3 <= target_index < dest + 7:
                     req = [self.bytes[condition_start:index]]
-
-                    print(req)
+                    #print(req)
                     condition.add_requirements(req)
                 index += 3
 
@@ -841,7 +873,8 @@ class Condition:
 
 
 class Link:
-    def __init__(self, cancel_index, conditions, args, move_id, encoded_move_id, type, sc_only, is_last_call):
+    def __init__(self, cancel, cancel_index, conditions, args, move_id, encoded_move_id, type, sc_only, is_last_call, is_shortcut):
+        self.cancel = cancel
         self.cancel_index = cancel_index
         self.conditions = conditions
         self.args = args
@@ -851,18 +884,25 @@ class Link:
         self.sc_only = sc_only
         self.is_last_call = is_last_call
         self.hold = False
+        self.is_shortcut = is_shortcut
 
-        self.parse_edge()
+        self.delta = self.parse_edge()
 
-        self.button_press = self.parse_button()
+        #self.button_press = self.parse_button()
+        if (0xff < self.move_id < self.cancel.movelist.block_Q_length):
+            self.button_press = self.better_parse_button()
+        else:
+            self.button_press = None
 
         self.auto_cancel = self.parse_auto_cancel()
+
+
 
     def __repr__(self):
         com = self.get_command_string()
         pa = Movelist.bytes_as_string(self.args)
         pp = ' ; '.join(['{} [{}]'.format(x[0], Movelist.bytes_as_string(x[1])) for x in self.conditions])
-        return '{:04x}: 25 {:02x} LINK: <b>{}<b> {} [o:{} i:{}] RAW: ({}) -> [{}]'.format(self.cancel_index, self.type, self.move_id, com, self.leave_on, self.enter_in, pa,  pp)
+        return '{:04x}: 25 {:02x} LINK: <b>{}<b> {} [o:{} i:{} delta:{}] RAW: ({}) -> [{}]'.format(self.cancel_index, self.type, self.move_id, com, self.leave_on, self.enter_in, self.delta, pa,  pp)
 
     def parse_edge(self):
         args_split = []
@@ -878,15 +918,19 @@ class Link:
             leave_on = args_split[0]
             enter_in = 0
 
-
-        if len(args_split) >= 2:
+        if len(args_split) == 2:
             leave_on = args_split[-1]
             enter_in = args_split[-2]
+
+        if len(args_split) > 2:
+            leave_on = args_split[-2]
+            enter_in = args_split[-1]
 
         self.leave_on = leave_on
         self.enter_in = enter_in
         #self.weight = self.leave_on - self.enter_in
         self.weight = self.leave_on
+        return self.leave_on - self.enter_in
 
     def is_to_attack_or_stance(self, movelist):
         #attacks exist between 256 and the end of the first block in the movelist (block Q)
@@ -901,21 +945,61 @@ class Link:
                         return True
         return False
 
+
+
+
     def get_command_string(self):
+        com = ''
         if self.auto_cancel and not self.button_press:
-            return '.'
-        if self.hold:
-            return '[{}]'.format(self.button_press.name)
-        if self.button_press == None:
-            return '?'
+            com = '.'
+        elif self.hold:
+            com = '[{}]'.format(self.button_press.name)
+        elif self.button_press == None:
+            com = '?'
         else:
-            return self.button_press.name
+            com = self.button_press.name
+
+        if self.sc_only:
+            com = '*{}'.format(com)
+
+        return com
 
     def get_graph_weight(self):
         if self.hold or self.is_button_press():
             return 10
         else:
             return 1
+
+    def better_parse_button(self):
+        condition = self.cancel.get_basic_condition_by_index(self.cancel_index)
+        for byte_array in condition.requirements:
+            if len(byte_array) >= 6:
+                arg_1 = b2i(byte_array, 1, big_endian=True)
+                arg_2 = b2i(byte_array, 4, big_endian=True)
+                if byte_array[0:1] == b'\x8b':
+                    if arg_1 == InputType.Press.value or arg_1 == InputType.No_SC_Press.value:
+                        if enum_has_value(PaddedButton, arg_2):
+                            return PaddedButton(arg_2)
+                    if arg_1 == InputType.Direction_PRESS.value or arg_1 == InputType.Direction_HOLD.value or arg_1 == InputType.Direction_ALT.value:
+                        return PaddedButton.d
+                    if arg_1 == InputType.OnContact.value:
+                        try:
+                            return PaddedButton(arg_2)
+                        except Exception:
+                            #print('UNKNOWNS {} {}'.format(arg_1, arg_2))
+                            return PaddedButton.U
+
+                    if arg_1 == InputType.Hold.value:
+                        if enum_has_value(PaddedButton, arg_2):
+                            self.hold = True
+                            return PaddedButton(arg_2)
+                    if arg_1 == InputType.DoubleTap.value:
+                        if arg_2 == PaddedButton.dd.value:
+                            return PaddedButton(arg_2)
+        return None
+
+
+
 
     def parse_button(self):
         for type, c in self.conditions:
@@ -1069,6 +1153,10 @@ class Movelist:
             self.all_cancels[ca] = cancel
             self.move_ids_to_cancels[i] = cancel
             self.all_moves[i].set_cancel(cancel)
+
+        #chase stance shortcuts in links
+        for cancel in self.all_cancels.values():
+            cancel.condense_all_shortcuts()
 
         #self.move_ids_to_commands = self.alt_parse_neutral()
         self.move_ids_to_commands = self.parse_neutral()
@@ -1389,11 +1477,12 @@ class Movelist:
         if not move_id < len(self.move_ids_to_cancels) or move_id < 0:
             return []
         else:
-            bytes = self.move_ids_to_cancels[move_id].bytes
-            return Movelist.links_from_bytes(bytes, self)
+            cancel = self.move_ids_to_cancels[move_id]
+            return Movelist.links_from_bytes(cancel, self)
 
 
-    def links_from_bytes(bytes, movelist):
+    def links_from_bytes(cancel, movelist):
+            bytes = cancel.bytes
             buf_all = []
 
             links = []
@@ -1456,17 +1545,22 @@ class Movelist:
                         state = -1
                         ref_state = -1
                         sc_only = False
+                        is_shortcut = False
                         for i, b in enumerate(args):
                             if b == 0x8b:
                                 state = b2i(args, i + 1, big_endian=True)
                                 ref_state = state
-                                if state == 0x30CC or state == 0x3218:  # soul charge marker, keep going 0x3218 may be tira gloomy only??
+                                if state == 0x30CC or state == 0x30CE :  # soul charge marker, keep going 0x3218 may be tira gloomy only??
                                     sc_only = True
+                                elif 0x3200 <= state <= 0x3300 : #stances exist in this range??
+                                    state = decode_move_id(state, movelist)
+                                    is_shortcut = True
+                                    break
                                 else:
                                     state = decode_move_id(state, movelist)
                                     break
 
-                        links.append(Link(index - len(args), conditions, args, state, ref_state, exe_type, sc_only, is_last_call))
+                        links.append(Link(cancel, index - len(args), conditions, args, state, ref_state, exe_type, sc_only, is_last_call, is_shortcut))
                         #print('{} {} {}: ({})'.format(inst, int(bytes[index + 1]), int(bytes[index + 2]), state))
 
                         conditions = []
@@ -1641,13 +1735,14 @@ if __name__ == "__main__":
     #movelists = [Movelist.from_file('movelists/tira.sc6_movelist')]
     #movelists = [Movelist.from_file('movelists/seong_mina_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/yoshimitsu_movelist.m0000')]
-    movelists = [Movelist.from_file('movelists/xianghua.sc6_movelist')]
+    #movelists = [Movelist.from_file('movelists/xianghua.sc6_movelist')]
     #movelists = [Movelist.from_file('movelists/mitsurugi_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/ivy_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/geralt_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/siegfried_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/voldo_movelist.m0000')]
     #movelists = [Movelist.from_file('movelists/azwel_movelist.m0000')]
+    movelists = [Movelist.from_file('movelists/2B.sc6_movelist')]
 
     #for movelist in movelists:
 
@@ -1691,7 +1786,10 @@ if __name__ == "__main__":
     #movelists[0].reverse_spider_crawl()
     movelists[0].print_all_frame_data()
 
-    cancel = movelists[0].all_moves[257].cancel
-    index = cancel.get_link_to_move_id(259).cancel_index
-    print(index)
-    print(cancel.get_basic_condition_index(index))
+    #cancel = movelists[0].all_moves[257].cancel
+    #index = cancel.get_link_to_move_id(259).cancel_index
+    #print(index)
+    #print(cancel.get_basic_condition_by_index(index))
+
+    for link in movelists[0].all_moves[424].cancel.links:
+        print(link)
