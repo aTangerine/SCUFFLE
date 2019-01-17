@@ -9,19 +9,21 @@ offset_movement_type_block = 0x160
 offset_timer_block = 0x110
 
 #The following addresses are all global (green adresses in cheat engine)
-global_timer_address = 0x45C6600 #there's a bunch of these, 4 bytes ; should go up until training mode is reset (goes to 0).
+global_timer_address = 0x45846AC #there's a bunch of these, 4 bytes ; should go up until training mode is reset (goes to 0).
 
-p1_input_address = 0x45844CC
-p2_input_address = 0x461B4EC
+p1_input_address = 0x45865A0
+p2_input_address = 0x461D5D0
 
-p1_movelist_address = 0x45C75D0 #p1/p2 movelist address: xianghua movelist starting bytes: 4B 48 31 31 00 00 00 00 00 00 00 00 99 0B 2D 00 38 43 03 00 48 D2 03 00 90 D2 03 00 00 00 3B 02 = (alternate bytes for 0th move indes: 3B 02 22 00 5D 02 09 07 66 09 33 02 86 1A 40 00 67 00 00 00 00 00 00 00 00 00 C8 42 00 00 C8 42 FF FF 00 00 00 00 00 00)
-p2_movelist_address = 0x465E5F0 #other starting bytes available in /movelists although they may have changed slightly if the patch touches the movelist
+p1_movelist_address = 0x45C96A0 #p1/p2 movelist address: xianghua movelist starting bytes: 4B 48 31 31 00 00 00 00 00 00 00 00 99 0B 2D 00 38 43 03 00 48 D2 03 00 90 D2 03 00 00 00 3B 02 = (alternate bytes for 0th move indes: 3B 02 22 00 5D 02 09 07 66 09 33 02 86 1A 40 00 67 00 00 00 00 00 00 00 00 00 C8 42 00 00 C8 42 FF FF 00 00 00 00 00 00)
+p2_movelist_address = 0x46606D0 #other starting bytes available in /movelists although they may have changed slightly if the patch touches the movelist
 
-p1_guard_damage_address = 0x4579F28 #xianghua aab is 4/4/16
-p2_guard_damage_address = 0x457A108
+p1_move_id_address = 0x45C8A52 #xianghua aab is 257/259/262 #there's a lot, pick the third one (or the one with immediate response time and that goes to '89' while transitioning from 8 way run to standing still)
+p2_move_id_address = 0x465FA82
 
-p1_move_id_address = 0x45C6982 #xianghua aab is 257/259/262 #there's a lot, pick the third one (or the one with immediate response time and that goes to '89' while transitioning from 8 way run to standing still)
-p2_move_id_address = 0x465D9A2
+p1_guard_damage_address = 0x457BFE8 #xianghua aab is 4/4/16
+p2_guard_damage_address = 0x457C1C8
+
+
 
 MOVELIST_BYTES = 0x150000 #memory allocated for movelist,
 
@@ -56,27 +58,27 @@ address_config.add_comment('However they can be found again with cheat engine.')
 address_config.add_comment('')
 address_config.add_comment('All these addresses are global which means they are *green* in cheat engine and will be located at the bottom of the list of matching addresses.')
 address_config.add_comment('')
-address_config.add_comment('Global Timer: The timer ticks up by 1 every frame and resets to 0 when training mode is reset. There seem to be multiple of these, perhaps all equally good?')
+address_config.add_comment('Global Timer (4 bytes): The timer ticks up by 1 every frame and resets to 0 when training mode is reset. There seem to be multiple of these, perhaps all equally good?')
 global_timer_address = address_config.get_hex_property(section_global, 'global_timer', global_timer_address)
 
-address_config.add_comment("p1/p2 Input Address: Input address can be found by holding buttons down. 0 for no button, 1 for A, 2 for B, 4 for K, and 8 for G. Combinations are added together. The second part of the input buffer is direction held, so don't hold any directions. Don't use the first global address, it picks up inputs for both p1 and p2 in training mode.")
+address_config.add_comment("p1/p2 Input Address (2 bytes): Input address can be found by holding buttons down. 0 for no button, 1 for A, 2 for B, 4 for K, and 8 for G. Combinations are added together. The second part of the input buffer is direction held, so don't hold any directions. Don't use the first global address, it picks up inputs for both p1 and p2 in training mode.")
 p1_input_address = address_config.get_hex_property(section_global, 'p1_input_buffer', p1_input_address)
 p2_input_address = address_config.get_hex_property(section_global, 'p2_input_buffer', p2_input_address)
 
 
-address_config.add_comment("p1/p2 Movelist Address: p1/p2 movelist address: xianghua movelist starting bytes: 4B 48 31 31 00 00 00 00 00 00 00 00 99 0B 2D 00 38 43 03 00 48 D2 03 00 90 D2 03 00 00 00 3B 02 (alternate bytes for 0th move indes: 3B 02 22 00 5D 02 09 07 66 09 33 02 86 1A 40 00 67 00 00 00 00 00 00 00 00 00 C8 42 00 00 C8 42 FF FF 00 00 00 00 00 00)")
+address_config.add_comment("p1/p2 Movelist Address (8 bytes): p1/p2 movelist address: xianghua movelist starting bytes: 4B 48 31 31 00 00 00 00 00 00 00 00")
 address_config.add_comment("p1/p2 Movelist Address: 1. Pick Xianghua for p1 and p2 2. Search for that byte array 3. Search for a global address that points to the address of that array. 4.There should be four addresses, use the 1st for p1 and 3rd for p2")
 p1_movelist_address = address_config.get_hex_property(section_global, 'p1_movelist_address', p1_movelist_address)
 p2_movelist_address = address_config.get_hex_property(section_global, 'p2_movelist_address', p2_movelist_address)
 
 
-address_config.add_comment("p1/p2 Move Id: Xianghua's a/a/b string has move ids 257/259/262.")
+address_config.add_comment("p1/p2 Move Id (2 bytes): Xianghua's a/a/b string has move ids 257/259/262.")
 address_config.add_comment("p1/p2 Move Id: There will be multiple matches, pick the third green address.")
 address_config.add_comment("p1/p2 Move Id: Alternately you are looking for a match that responds without delay and briefly shows '89' while transitioning from 8-way run to standing.")
 p1_move_id_address = address_config.get_hex_property(section_global, 'p1_move_id_address', p1_move_id_address)
 p2_move_id_address = address_config.get_hex_property(section_global, 'p2_move_id_address', p2_move_id_address)
 
-address_config.add_comment("p1/p2 Guard Damage: Xianghua's a/a/b string has gdam 4/4/16. A+B has guard damage 38.")
+address_config.add_comment("p1/p2 Guard Damage (2 bytes): Xianghua's a/a/b string has gdam 4/4/16. A+B has guard damage 38.")
 p1_guard_damage_address = address_config.get_hex_property(section_global, 'p1_guard_damage_address', p1_guard_damage_address)
 p2_guard_damage_address = address_config.get_hex_property(section_global, 'p2_guard_damage_address', p2_guard_damage_address)
 
