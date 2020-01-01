@@ -16,3 +16,10 @@ To build the project, make sure you have python 3.5 and pyinstaller and run the 
 # I want to know more!
 
 Check out https://www.youtube.com/watch?v=GjB-MRonAFc or read [How the Movelist is Parsed](__HowTheMovelistBytesWork.md)
+
+# Information about Full Screen Overlay
+Extremely hacky, prints string output from SCUFFLE to `Data/read.txt` and then reads the last line and prints it on the overlay (5 times for some reason).
+Need to get this working in a basic manner first and then work to more elegantly integrate it into SCUFFLE. 
+To get it working in a very basic sense, need to:
+* Parse the string and output only the desired information (currently just input and frames OB)
+
