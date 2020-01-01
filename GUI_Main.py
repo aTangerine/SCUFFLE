@@ -33,7 +33,8 @@ class GUI_Main(Tk):
 
         self.text = Text(self, wrap="word")
         self.stdout = sys.stdout
-        self.var_print_frame_data_to_file = BooleanVar(value=False)
+        self.var_print_frame_data_to_file = BooleanVar(value=True)
+        # args for below: widget, stdout, callback_function, var_print_frame_data_to_file,tag="stdout"
         sys.stdout = TextRedirector(self.text, sys.stdout, self.write_to_overlay, self.var_print_frame_data_to_file, "stdout")
         self.stderr = sys.stderr
         sys.stderr = TextRedirector(self.text, sys.stderr, self.write_to_error, "stderr")
