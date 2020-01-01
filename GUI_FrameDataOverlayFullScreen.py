@@ -7,7 +7,6 @@ the following code uses start_monitor rather than run_process method
 command line is:
 python examples\monitor.py --name SOTTR.exe
 https://github.com/Andrey1994/game_overlay_sdk
-import subprocess
 '''
 import time
 import game_overlay_sdk
@@ -27,15 +26,20 @@ class MessageThread (threading.Thread):
         super (MessageThread, self).__init__ ()
         self.need_quit = False
 
-    def run (self):
+    def run (self): # need to restrict length of file or something
         i = 0
         while not self.need_quit:
+            with open('Data/read.txt', 'r') as read_file:
+                last_line = read_file.read().splitlines()[-1]
+                # last_line = read_file.readlines(1000)[-1]
             try:
                 '''
                 game_overlay_sdk.injector.send_message ('Hi from python %d' % i)
                 i = i + 1
                 time.sleep (1)
                 '''
+                game_overlay_sdk.injector.send_message (str(last_line))
+                i += 1
             except game_overlay_sdk.injector.InjectionError as err:
                 if err.exit_code == game_overlay_sdk.injector.CustomExitCodes.TARGET_PROCESS_IS_NOT_CREATED_ERROR.value:
                     logging.warning ('target process is not created')
@@ -47,6 +51,7 @@ class MessageThread (threading.Thread):
                     time.sleep (5)
                 else:
                     raise err
+            time.sleep(0.01666)
 
 
 def main ():
