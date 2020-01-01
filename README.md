@@ -18,8 +18,10 @@ To build the project, make sure you have python 3.5 and pyinstaller and run the 
 Check out https://www.youtube.com/watch?v=GjB-MRonAFc or read [How the Movelist is Parsed](__HowTheMovelistBytesWork.md)
 
 # Information about Full Screen Overlay
-Extremely hacky, prints string output from SCUFFLE to `Data/read.txt` and then reads the last line and prints it on the overlay (5 times for some reason).
+Extremely hacky, prints string output from SCUFFLE to `Data/read.txt` and then reads and prints it on the overlay.
+Output is presently parsed to show only the input notation and its frames on block. 
 Need to get this working in a basic manner first and then work to more elegantly integrate it into SCUFFLE. 
-To get it working in a very basic sense, need to:
-* Parse the string and output only the desired information (currently just input and frames OB)
+Current problems:
+* Prints message 5x for some reason
+* Alt-tabs back to desktop the first time it registers an input but never again after
 
