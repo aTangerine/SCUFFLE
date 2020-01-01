@@ -1,10 +1,11 @@
 # needs classes etc
+# must run as admin
 '''
 https://pypi.org/project/game-overlay-sdk/
 54470 is steam app id
-the following code uses run_process rather than start_monitor method
+the following code uses start_monitor rather than run_process method
 command line is:
-python examples\overlay_log_handler.py --exe_path "D:\Steam\steamapps\common\Shadow of the Tomb Raider Trial\SOTTR.exe" --steam_app_id 974630
+python examples\monitor.py --name SOTTR.exe
 https://github.com/Andrey1994/game_overlay_sdk
 '''
 import time
@@ -13,16 +14,10 @@ import game_overlay_sdk.injector
 import threading
 import logging
 
-
-logging.basicConfig (filename = 'test.log', level = logging.WARNING)
-
-logger = logging.getLogger (__name__)
-logger.setLevel (logging.INFO)
-overlay_log_handler = game_overlay_sdk.injector.OvelrayLogHandler ()
-formatter = logging.Formatter ('%(levelname)s:%(message)s')
-overlay_log_handler.setFormatter (formatter)
-logger.addHandler (overlay_log_handler)
-
+# create the file in the directory that (game_overlay_sdk) requires this:
+path = 'C:\Program Files (x86)\Steam\steamapps\common\SoulcaliburVI'
+with open('%s\steam_appid.txt' % path, 'w') as appid_file:
+    appid_file.write('544750')
 
 class MessageThread (threading.Thread):
 
@@ -33,16 +28,28 @@ class MessageThread (threading.Thread):
     def run (self):
         i = 0
         while not self.need_quit:
-            logger.info ('Hi from python OverlayLogHandler %d' % i)
-            i = i + 1
-            time.sleep (1)
+            try:
+                game_overlay_sdk.injector.send_message ('Hi from python %d' % i)
+                i = i + 1
+                time.sleep (1)
+            except game_overlay_sdk.injector.InjectionError as err:
+                if err.exit_code == game_overlay_sdk.injector.CustomExitCodes.TARGET_PROCESS_IS_NOT_CREATED_ERROR.value:
+                    logging.warning ('target process is not created')
+                    time.sleep (5)
+                elif err.exit_code == game_overlay_sdk.injector.CustomExitCodes.TARGET_PROCESS_WAS_TERMINATED_ERROR.value:
+                    logging.warning ('target process was stopped')
+                    # in monitor mode we can run process several times so dont need to stop this thread here
+                    i = 0
+                    time.sleep (5)
+                else:
+                    raise err
 
 
 def main ():
+    logging.basicConfig (level = logging.DEBUG)
 
     game_overlay_sdk.injector.enable_monitor_logger ()
-    # arguments are process path, process args, app id
-    game_overlay_sdk.injector.run_process ('C:\Program Files (x86)\Steam\steamapps\common\SoulcaliburVI\SoulcaliburVI\Binaries\Win64\SoulcaliburVI.exe', '', '544750')
+    game_overlay_sdk.injector.start_monitor ('SoulcaliburVI.exe')
 
     # start sending messages to overlay
     thread = MessageThread ()
