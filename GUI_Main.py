@@ -33,7 +33,7 @@ class GUI_Main(Tk):
 
         self.text = Text(self, wrap="word")
         self.stdout = sys.stdout
-        self.var_print_frame_data_to_file = BooleanVar(value=True)
+        self.var_print_frame_data_to_file = BooleanVar(value=False)
         # args for below: widget, stdout, callback_function, var_print_frame_data_to_file,tag="stdout"
         sys.stdout = TextRedirector(self.text, sys.stdout, self.write_to_overlay, self.var_print_frame_data_to_file, "stdout")
         self.stderr = sys.stderr
@@ -142,11 +142,15 @@ class GUI_Main(Tk):
         self.start_overlay()
 
     def write_to_overlay(self, string):
+        '''
         if self.var_print_frame_data_to_file.get() and 'NOW:' in string:
             with open("Data/out.txt", 'a') as fa:
                 fa.write(string +'\n')
+        '''
         if self.overlay != None:
             self.overlay.redirector.write(string)
+            with open('Data/read.txt', 'a') as fa:
+                fa.write(str(string))
         #if 'HIT' in string:
             #self.graph.redirector.write(string)
 
