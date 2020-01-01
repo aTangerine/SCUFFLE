@@ -149,8 +149,10 @@ class GUI_Main(Tk):
         '''
         if self.overlay != None:
             self.overlay.redirector.write(string)
-            with open('Data/read.txt', 'a') as fa:
-                fa.write(str(string))
+            if '|' in string:
+                string.replace('\n', '')
+                with open('Data/read.txt', 'w') as fa:
+                    fa.write(str(string))
         #if 'HIT' in string:
             #self.graph.redirector.write(string)
 
