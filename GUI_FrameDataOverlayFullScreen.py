@@ -7,12 +7,14 @@ the following code uses start_monitor rather than run_process method
 command line is:
 python examples\monitor.py --name SOTTR.exe
 https://github.com/Andrey1994/game_overlay_sdk
+import subprocess
 '''
 import time
 import game_overlay_sdk
 import game_overlay_sdk.injector
 import threading
 import logging
+
 
 # create the file in the directory that (game_overlay_sdk) requires this:
 path = 'C:\Program Files (x86)\Steam\steamapps\common\SoulcaliburVI'
@@ -29,9 +31,11 @@ class MessageThread (threading.Thread):
         i = 0
         while not self.need_quit:
             try:
+                '''
                 game_overlay_sdk.injector.send_message ('Hi from python %d' % i)
                 i = i + 1
                 time.sleep (1)
+                '''
             except game_overlay_sdk.injector.InjectionError as err:
                 if err.exit_code == game_overlay_sdk.injector.CustomExitCodes.TARGET_PROCESS_IS_NOT_CREATED_ERROR.value:
                     logging.warning ('target process is not created')
