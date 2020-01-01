@@ -15,6 +15,9 @@ import threading
 import logging
 import subprocess
 
+with open('Data/read.txt', 'w') as initial_file:
+    initial_file.write('Full Screen Overlay Enabled')
+
 subprocess.Popen('python GUI_Main.py')
 
 # create the file in the directory that (game_overlay_sdk) requires this:
