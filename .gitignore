@@ -2,3 +2,4 @@
 test.log
 __pycache__/
 Config/address_map.ini
+Data/out.txt
