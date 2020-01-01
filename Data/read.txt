@@ -1,1 +1,1 @@
-Full Screen Overlay Enabled
+FDO:p1:302|  1B   | 18 |low_37| -16 |KND +0 |       |18|7 |2|52 |34 | 0 |GRND

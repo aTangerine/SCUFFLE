@@ -13,7 +13,9 @@ import game_overlay_sdk
 import game_overlay_sdk.injector
 import threading
 import logging
+import subprocess
 
+subprocess.Popen('python GUI_Main.py')
 
 # create the file in the directory that (game_overlay_sdk) requires this:
 path = 'C:\Program Files (x86)\Steam\steamapps\common\SoulcaliburVI'
