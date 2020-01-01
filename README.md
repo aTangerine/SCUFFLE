@@ -25,3 +25,9 @@ Current problems:
 * Prints message 5x for some reason
 * Alt-tabs back to desktop the first time it registers an input but never again after
 
+Have not tested the build process, currently use the following instructions to use:
+1. Ensure that Python 3.5 is installed
+2. Install required modules via pip
+3. Using PowerShell as admin, run `python GUI_FrameDataOverlayFullScreen.py` from the folder you cloned to
+4. Start SC6
+
