@@ -9,19 +9,19 @@ offset_movement_type_block = 0x160
 offset_timer_block = 0x110
 
 #The following addresses are all global (green adresses in cheat engine)
-global_timer_address = 0x45846AC #there's a bunch of these, 4 bytes ; should go up until training mode is reset (goes to 0).
+global_timer_address = 0x4669C7C #there's a bunch of these, 4 bytes ; should go up until training mode is reset (goes to 0).
 
-p1_input_address = 0x45865A0
-p2_input_address = 0x461D5D0
+p1_input_address = 0x466BB90
+p2_input_address = 0x4702EF0
 
-p1_movelist_address = 0x45C96A0 #p1/p2 movelist address: xianghua movelist starting bytes: 4B 48 31 31 00 00 00 00 00 00 00 00 99 0B 2D 00 38 43 03 00 48 D2 03 00 90 D2 03 00 00 00 3B 02 = (alternate bytes for 0th move indes: 3B 02 22 00 5D 02 09 07 66 09 33 02 86 1A 40 00 67 00 00 00 00 00 00 00 00 00 C8 42 00 00 C8 42 FF FF 00 00 00 00 00 00)
-p2_movelist_address = 0x46606D0 #other starting bytes available in /movelists although they may have changed slightly if the patch touches the movelist
+p1_movelist_address = 0x46AEF90 #p1/p2 movelist address: xianghua movelist starting bytes: 4B 48 31 31 00 00 00 00 00 00 00 00 99 0B 2D 00 38 43 03 00 48 D2 03 00 90 D2 03 00 00 00 3B 02 = (alternate bytes for 0th move indes: 3B 02 22 00 5D 02 09 07 66 09 33 02 86 1A 40 00 67 00 00 00 00 00 00 00 00 00 C8 42 00 00 C8 42 FF FF 00 00 00 00 00 00)
+p2_movelist_address = 0x47462F0 #other starting bytes available in /movelists although they may have changed slightly if the patch touches the movelist
 
-p1_move_id_address = 0x45C8A52 #xianghua aab is 257/259/262 #there's a lot, pick the third one (or the one with immediate response time and that goes to '89' while transitioning from 8 way run to standing still)
-p2_move_id_address = 0x465FA82
+p1_move_id_address = 0x46AE342 #xianghua aab is 257/259/262 #there's a lot, pick the third one (or the one with immediate response time and that goes to '89' while transitioning from 8 way run to standing still)
+p2_move_id_address = 0x47456A2
 
-p1_guard_damage_address = 0x457BFE8 #xianghua aab is 4/4/16
-p2_guard_damage_address = 0x457C1C8
+p1_guard_damage_address = 0x46615D8 #xianghua aab is 4/4/16
+p2_guard_damage_address = 0x46616B8
 
 
 
