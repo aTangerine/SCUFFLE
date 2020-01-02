@@ -32,7 +32,6 @@ class MessageThread (threading.Thread):
         self.need_quit = False
 
     def run (self):
-        i = 0
         # checks if previous_line variable exists and if not creates it
         try:
             previous_line
@@ -65,7 +64,6 @@ class MessageThread (threading.Thread):
                     time.sleep (1)
                     '''
                     game_overlay_sdk.injector.send_message (message)
-                    i += 1
                     previous_line = last_line
                 except game_overlay_sdk.injector.InjectionError as err:
                     if err.exit_code == game_overlay_sdk.injector.CustomExitCodes.TARGET_PROCESS_IS_NOT_CREATED_ERROR.value:
