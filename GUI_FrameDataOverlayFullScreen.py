@@ -33,6 +33,7 @@ class MessageThread (threading.Thread):
 
     def run (self):
         i = 0
+        # checks if previous_line variable exists and if not creates it
         try:
             previous_line
         except NameError:
@@ -48,7 +49,7 @@ class MessageThread (threading.Thread):
             FDO:p1:283|  5BB  | 20 |mid_4b| -6  |   +4  |       |14|7 |2|51 |31 |-1 |�
             FDO:p1:284| 5BBB  | 36 |mid_6f| -4  |LNC +2 |       |20|30|2|69 |33 |11 |GRND �
             '''
-            if '|' in last_line and last_line is not previous_line:
+            if '|' in last_line and last_line != previous_line:
                 columns = last_line.split('|')
                 print(columns)
                 # remove whitespace
@@ -77,7 +78,7 @@ class MessageThread (threading.Thread):
                         time.sleep (5)
                     else:
                         raise err
-                time.sleep(0.01666)
+            time.sleep(0.01666)
 
 
 def main ():

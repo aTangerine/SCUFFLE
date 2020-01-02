@@ -22,7 +22,6 @@ Extremely hacky, prints string output from SCUFFLE to `Data/read.txt` and then r
 Output is presently parsed to show only the input notation and its frames on block. 
 Need to get this working in a basic manner first and then work to more elegantly integrate it into SCUFFLE. 
 Current problems:
-* Prints message 5x for some reason
 * Alt-tabs back to desktop the first time it registers an input but never again after
 
 Have not tested the build process, currently use the following instructions to use:
