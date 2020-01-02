@@ -56,7 +56,8 @@ class MessageThread (threading.Thread):
                     column.replace(' ', '')
                 move_notation = columns[1]
                 frames_on_block = columns[4]
-                message = '%s is %s on block' % (move_notation, frames_on_block)
+                frames_on_hit = columns[5]
+                message = '%s: %s OB, %s OH' % (move_notation, frames_on_block, frames_on_hit)
                 try:
                     '''
                     game_overlay_sdk.injector.send_message ('Hi from python %d' % i)
