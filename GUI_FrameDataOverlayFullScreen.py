@@ -54,10 +54,11 @@ class MessageThread (threading.Thread):
                 # remove whitespace
                 for column in columns:
                     column.replace(' ', '')
+                player = columns[0].split(':')[1].upper()
                 move_notation = columns[1]
                 frames_on_block = columns[4]
                 frames_on_hit = columns[5]
-                message = '%s: %s OB, %s OH' % (move_notation, frames_on_block, frames_on_hit)
+                message = '%s %s: %s OB, %s OH' % (player, move_notation, frames_on_block, frames_on_hit)
                 try:
                     '''
                     game_overlay_sdk.injector.send_message ('Hi from python %d' % i)
