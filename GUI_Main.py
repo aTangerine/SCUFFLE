@@ -125,7 +125,7 @@ class GUI_Main(Tk):
 
         self.previous_working_pid = 0
         self.update_launcher()
-        #self.overlay.hide()
+        self.overlay.hide() # hides old overlay
 
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
