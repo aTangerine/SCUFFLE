@@ -25,6 +25,7 @@ Output is presently parsed to show only the input notation and its frames on blo
 Need to get this working in a basic manner first and then work to more elegantly integrate it into SCUFFLE. 
 Current problems:
 * Alt-tabs back to desktop the first time it registers an input but never again after
+* Doesn't hide game_overlay_sdk window
 
 Have not tested the build process, currently use the following instructions to use:
 1. Ensure that Python 3.5 is installed
