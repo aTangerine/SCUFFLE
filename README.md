@@ -1,5 +1,7 @@
-# SCUFFLE
+# SCUFFLE (Simple FSO Edition)
 Soul Calibur 6 Live Frame Data Reader -- based on the useful parts of the popular Tekken Bot Prime, it shows you frame data while you're playing the game so you don't have to alt-tab to a wiki or a google doc or a paste bin or yell at your twitch chat or <character> discord. Some of the frame data is even correct.
+
+This is the Simple FSO (Full Screen Overlay) Edition of SCUFFLE, which incorporates an abridged, simpler display of frame data on a full screen overlay - no need to use borderless.
 
 ![image](https://user-images.githubusercontent.com/44570288/47742019-b740ca00-dc49-11e8-8f68-938c418bbaa3.png)
 
@@ -30,3 +32,8 @@ Have not tested the build process, currently use the following instructions to u
 3. Using PowerShell as admin, run `python GUI_FrameDataOverlayFullScreen.py` from the folder you cloned to
 4. Start SC6
 
+## To do
+* Reposition overlay
+* Heading column for overlay
+* Implement OH data display
+* General code cleanup and better integration with existing SCUFFLE codebase
