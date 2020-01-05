@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter.ttk import *
-import GUI_FrameDataOverlay as fdo
+import GUI_FrameDataOverlayFullscreen as fdo
 import GUI_Overlay as ovr
 #import GUI_TimelineOverlay as tlo
 #import GUI_CommandInputOverlay as cio
@@ -56,7 +56,7 @@ class GUI_Main(Tk):
         print("SCUFFLE Starting...")
         self.launcher = GameStateManager()
 
-        self.overlay = fdo.GUI_FrameDataOverlay(self, self.launcher)
+        self.overlay = fdo.main()
         #self.graph = tlo.GUI_TimelineOverlay(self, self.launcher)
 
         self.tekken_bot_menu = Menu(self.menu)
@@ -88,11 +88,12 @@ class GUI_Main(Tk):
 
 
         self.checkbox_dict = {}
+        '''
         self.column_menu = Menu(self.menu)
         for i, enum in enumerate(fdo.DataColumns):
             bool = self.overlay.redirector.columns_to_print[i]
             self.add_checkbox(self.column_menu, enum, "{} ({})".format(enum.name.replace('X', ' ').strip(), fdo.DataColumnsToMenuNames[enum]), bool, self.changed_columns)
-        self.menu.add_cascade(label='Columns', menu=self.column_menu)
+        self.menu.add_cascade(label='Columns', menu=self.column_menu)'''
 
         self.display_menu = Menu(self.menu)
         for enum in ovr.DisplaySettings:
@@ -149,10 +150,10 @@ class GUI_Main(Tk):
         '''
         if self.overlay != None:
             self.overlay.redirector.write(string)
-            if '|' in string:
+            '''if '|' in string:
                 string.replace('\n', '')
                 with open('Data/read.txt', 'w') as fa:
-                    fa.write(str(string))
+                    fa.write(str(string))'''
         #if 'HIT' in string:
             #self.graph.redirector.write(string)
 
@@ -188,13 +189,13 @@ class GUI_Main(Tk):
         self.checkbox_dict[lookup_key] = var
         menu.add_checkbutton(label=display_string, onvalue=True, offvalue=False, variable=var, command = button_command)
 
-    def changed_color_scheme(self, section, do_reboot=True):
+    '''def changed_color_scheme(self, section, do_reboot=True):
         for enum in fdo.ColorSchemeEnum:
             fdo.CurrentColorScheme.dict[enum] = self.color_scheme_config.get_property(section, enum.name, fdo.CurrentColorScheme.dict[enum])
             self.color_scheme_config.set_property("Current", enum.name, fdo.CurrentColorScheme.dict[enum])
         self.color_scheme_config.write()
         if do_reboot:
-            self.reboot_overlay()
+            self.reboot_overlay()'''
 
     def changed_mode(self, mode):
 
@@ -207,12 +208,12 @@ class GUI_Main(Tk):
 
 
 
-    def changed_columns(self):
+    '''def changed_columns(self):
         generated_columns = []
         for enum in fdo.DataColumns:
             var = self.checkbox_dict[enum]
             generated_columns.append(var.get())
-        self.overlay.set_columns_to_print(generated_columns)
+        self.overlay.set_columns_to_print(generated_columns)'''
 
     def changed_display(self):
         for enum in ovr.DisplaySettings:
@@ -229,7 +230,8 @@ class GUI_Main(Tk):
         self.overlay = None
 
     def start_overlay(self):
-        self.overlay = fdo.GUI_FrameDataOverlay(self, self.launcher)
+        self.overlay = fdo.main()
+        # was GUI_FrameDataOverlay(self, self.launcher)
         self.overlay.hide()
 
     def reboot_overlay(self):
