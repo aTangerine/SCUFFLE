@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter.ttk import *
-import GUI_FrameDataOverlayFullscreen as fdo
+import GUI_FrameDataOverlay as fdo
 import GUI_Overlay as ovr
 #import GUI_TimelineOverlay as tlo
 #import GUI_CommandInputOverlay as cio
@@ -40,7 +40,13 @@ class GUI_Main(Tk):
         sys.stderr = TextRedirector(self.text, sys.stderr, self.write_to_error, "stderr")
         self.text.tag_configure("stderr", foreground="#b22222")
 
+        with open('Data/read.txt', 'w') as initial_file:
+            initial_file.write('Full Screen Overlay Enabled')
 
+        # create the file in the directory that (game_overlay_sdk) requires this:
+        path = 'C:\Program Files (x86)\Steam\steamapps\common\SoulcaliburVI'
+        with open('%s\steam_appid.txt' % path, 'w') as appid_file:
+            appid_file.write('544750')
 
         try:
             with open("Data/SCUFFLE_readme.txt") as fr:
@@ -149,11 +155,11 @@ class GUI_Main(Tk):
                 fa.write(string +'\n')
         '''
         if self.overlay != None:
-            self.overlay.redirector.write(string)
-            '''if '|' in string:
+            #self.overlay.redirector.write(string)
+            if '|' in string:
                 string.replace('\n', '')
                 with open('Data/read.txt', 'w') as fa:
-                    fa.write(str(string))'''
+                    fa.write(str(string))
         #if 'HIT' in string:
             #self.graph.redirector.write(string)
 

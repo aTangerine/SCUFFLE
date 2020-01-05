@@ -31,7 +31,7 @@ class MessageThread (threading.Thread):
         super (MessageThread, self).__init__ ()
         self.need_quit = False
 
-    def run (self):
+    def run (self, string):
         # checks if previous_line variable exists and if not creates it
         try:
             previous_line
